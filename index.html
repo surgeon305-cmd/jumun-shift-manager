@@ -23,8 +23,8 @@
     .user-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .user-btn { padding: 16px 8px; border-radius: 12px; border: 2px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .2s; text-align: center; }
     .user-btn:hover { border-color: #c4b5fd; }
-    .user-btn.sel-a { border-color: #7c3aed; background: #faf5ff; }
-    .user-btn.sel-b { border-color: #db2777; background: #fdf2f8; }
+    .user-btn.sel-a { border-color: #7ec8e3; background: #d6eef8; }
+    .user-btn.sel-b { border-color: #90d490; background: #d4f1d4; }
     .user-btn .u-icon { font-size: 28px; margin-bottom: 4px; }
     .user-btn .u-name { font-weight: 600; font-size: 15px; color: #374151; }
     .pin-label { font-size: 13px; font-weight: 600; color: #6b7280; margin-bottom: 10px; }
@@ -472,30 +472,57 @@ function CalendarView({ scheduleMap, currentUser, year, month, onCellClick }) {
 }
 
 // ── 통계 카드 ──
-function StatsCards({ scheduleMap, currentUser, year, month }) {
-  const keys = Object.keys(scheduleMap).filter(k => k.startsWith(`${year}-${String(month+1).padStart(2,'0')}`));
-  const myDays = keys.filter(k => scheduleMap[k].worker === currentUser).length;
-  const restDays = daysInMonth(year, month) - myDays;
+// 항차별 섬 도착 기준 분 수
+const FERRY_MINS = { '1항차': 505, '2항차': 835, '3항차': 1045 };
+const arrivalMins = ht => FERRY_MINS[ht?.split(' ')[0]] ?? 505;
+const fmtMins = m => { const h = Math.floor(m/60), r = m%60; return r > 0 ? `${h}시간 ${r}분` : `${h}시간`; };
+
+function StatsCards({ scheduleMap, year, month }) {
+  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  const monthKeys = Object.keys(scheduleMap).filter(k => k.startsWith(prefix));
+
+  let hjDays=0, msDays=0, hjMins=0, msMins=0;
+  monthKeys.forEach(k => {
+    const sc = scheduleMap[k];
+    if (sc.is_handover) {
+      const am = arrivalMins(sc.handover_time);
+      if (sc.worker === '효중') { hjDays++; hjMins += 1440-am; msMins += am; }
+      else                      { msDays++; msMins += 1440-am; hjMins += am; }
+    } else {
+      if (sc.worker === '효중') { hjDays++; hjMins += 1440; }
+      else                      { msDays++; msMins += 1440; }
+    }
+  });
+
+  const total = daysInMonth(year, month);
   const nextHandover = Object.entries(scheduleMap)
     .filter(([k,v]) => k >= today() && v.is_handover)
     .sort(([a],[b]) => a.localeCompare(b))[0];
-
-  const [y,m,d] = nextHandover ? nextHandover[0].split('-') : [];
-  const nextLabel = nextHandover ? `${parseInt(m)}/${parseInt(d)} ${nextHandover[1].handover_time?.split(' ')[0]}` : '-';
+  const [,nm,nd] = nextHandover ? nextHandover[0].split('-') : [];
+  const nextLabel = nextHandover ? `${parseInt(nm)}/${parseInt(nd)} ${nextHandover[1].handover_time?.split(' ')[0]}` : '-';
 
   return (
     <div className="stats-grid">
       <div className="stat-card">
         <div className="stat-label">근무일수 ({month+1}월)</div>
-        <div className="stat-val c-purple">{myDays}일</div>
+        <div style={{marginTop:6}}>
+          <div style={{fontSize:16,fontWeight:700,color:'#1a5276'}}>효중 {hjDays}일</div>
+          <div style={{fontSize:16,fontWeight:700,color:'#1e5631',marginTop:3}}>민수 {msDays}일</div>
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-label">실근무시간</div>
-        <div className="stat-val c-blue">{myDays*24}시간</div>
+        <div style={{marginTop:6}}>
+          <div style={{fontSize:13,fontWeight:700,color:'#1a5276'}}>효중 {fmtMins(hjMins)}</div>
+          <div style={{fontSize:13,fontWeight:700,color:'#1e5631',marginTop:3}}>민수 {fmtMins(msMins)}</div>
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-label">휴식일수</div>
-        <div className="stat-val c-green">{restDays}일</div>
+        <div style={{marginTop:6}}>
+          <div style={{fontSize:16,fontWeight:700,color:'#1a5276'}}>효중 {total-hjDays}일</div>
+          <div style={{fontSize:16,fontWeight:700,color:'#1e5631',marginTop:3}}>민수 {total-msDays}일</div>
+        </div>
       </div>
       <div className="stat-card">
         <div className="stat-label">다음 교대</div>
@@ -789,7 +816,7 @@ function App() {
 
       <div className="main">
         {/* 통계 */}
-        <StatsCards scheduleMap={scheduleMap} currentUser={currentUser} year={calYear} month={calMonth} />
+        <StatsCards scheduleMap={scheduleMap} year={calYear} month={calMonth} />
 
         {/* 교대 알림 */}
         <HandoverAlert scheduleMap={scheduleMap} currentUser={currentUser} />
