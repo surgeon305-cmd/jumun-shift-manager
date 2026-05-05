@@ -304,8 +304,9 @@ function LoginScreen({ onLogin }) {
 
   const verify = async (p) => {
     const entered = p.join('');
-    const { data } = await supabase.from('users').select('pin,is_first_login,is_admin').eq('username', user).single();
-    if (!data) { setErr('사용자 정보 없음'); setPin(['','','','']); return; }
+    // select('*') 사용 — is_admin 컬럼 없어도 에러 없이 동작
+    const { data, error } = await supabase.from('users').select('*').eq('username', user).single();
+    if (error || !data) { setErr('사용자 정보 없음'); setPin(['','','','']); return; }
     if (data.pin !== entered) { setErr('PIN이 틀렸습니다'); setPin(['','','','']); document.getElementById('p0')?.focus(); return; }
     onLogin(user, data.is_first_login, data.is_admin || false);
   };
@@ -717,14 +718,19 @@ function WishCalendar({ currentUser }) {
   const [wYear, setWYear] = useState(defYear);
   const [wMonth, setWMonth] = useState(defMonth);
   const [wishDates, setWishDates] = useState(new Set());
+  const [tableReady, setTableReady] = useState(true);
   const todayKey = today();
 
   useEffect(() => {
     supabase.from('wish_dates').select('date').eq('username', currentUser)
-      .then(({ data }) => { if (data) setWishDates(new Set(data.map(r => r.date))); });
+      .then(({ data, error }) => {
+        if (error) { setTableReady(false); return; }
+        if (data) setWishDates(new Set(data.map(r => r.date)));
+      });
   }, [currentUser]);
 
   const toggleWish = async (dateKey) => {
+    if (!tableReady) return;
     const newSet = new Set(wishDates);
     if (newSet.has(dateKey)) {
       newSet.delete(dateKey);
@@ -753,6 +759,7 @@ function WishCalendar({ currentUser }) {
       <div style={{marginBottom:12}}>
         <h3 style={{fontSize:16,fontWeight:700,color:'#1f2937',marginBottom:4}}>💚 희망 휴무일 선택</h3>
         <p style={{fontSize:13,color:'#6b7280'}}>원하는 휴무일을 달력에서 선택 (Supabase 자동 저장)</p>
+        {!tableReady && <div style={{background:'#fef3c7',borderRadius:8,padding:'8px 12px',fontSize:12,color:'#92400e',marginTop:6}}>⚠️ wish_dates 테이블을 먼저 생성해주세요 (Supabase SQL Editor)</div>}
       </div>
 
       <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:12}}>
@@ -802,10 +809,12 @@ function WishCalendar({ currentUser }) {
 // SQL: CREATE TABLE weekend_checks (id bigserial primary key, username text, date text, checked boolean default false, created_at timestamptz default now(), unique(username, date));
 function StatsTab({ scheduleMap, currentUser }) {
   const [checks, setChecks] = useState({});
+  const [checksReady, setChecksReady] = useState(true);
 
   useEffect(() => {
     supabase.from('weekend_checks').select('date,checked').eq('username', currentUser)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { setChecksReady(false); return; }
         if (data) {
           const m = {};
           data.forEach(r => { m[r.date] = r.checked; });
@@ -823,6 +832,7 @@ function StatsTab({ scheduleMap, currentUser }) {
     .sort(([a], [b]) => a.localeCompare(b));
 
   const toggleCheck = async (dateKey) => {
+    if (!checksReady) return;
     const newVal = !checks[dateKey];
     setChecks(c => ({ ...c, [dateKey]: newVal }));
     const { data } = await supabase.from('weekend_checks').select('id').eq('username', currentUser).eq('date', dateKey).maybeSingle();
@@ -846,6 +856,7 @@ function StatsTab({ scheduleMap, currentUser }) {
       <div className="fair-card">
         <div className="fair-title">🗓️ 주말/공휴일 근무 체크리스트</div>
         <p style={{fontSize:12,color:'#6b7280',marginBottom:14}}>{currentUser}님의 근무일 기준 · 근무일로부터 1개월 이내 보상 여부 확인</p>
+        {!checksReady && <div style={{background:'#fef3c7',borderRadius:8,padding:'8px 12px',fontSize:12,color:'#92400e',marginBottom:12}}>⚠️ weekend_checks 테이블을 먼저 생성해주세요 (Supabase SQL Editor)</div>}
         {workItems.length === 0 ? (
           <p style={{color:'#9ca3af',fontSize:13,textAlign:'center',padding:'12px 0'}}>주말/공휴일 근무 기록 없음</p>
         ) : workItems.map(([k, v]) => {
