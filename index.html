@@ -843,11 +843,13 @@ function StatsTab({ scheduleMap, currentUser }) {
     }
   };
 
+  // 근무일 + 1개월 = 마감일, 오늘부터 마감일까지 남은 일수 (음수면 기한초과)
   const calcDaysLeft = (dateKey) => {
-    const worked = new Date(dateKey + 'T12:00:00');
+    const worked = new Date(dateKey + 'T00:00:00');
     const deadline = new Date(worked);
     deadline.setMonth(deadline.getMonth() + 1);
-    return Math.ceil((deadline - new Date()) / 86400000);
+    const todayMidnight = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
+    return Math.ceil((deadline - todayMidnight) / 86400000);
   };
 
   return (
@@ -855,7 +857,7 @@ function StatsTab({ scheduleMap, currentUser }) {
       <FairnessReport scheduleMap={scheduleMap} />
       <div className="fair-card">
         <div className="fair-title">🗓️ 주말/공휴일 근무 체크리스트</div>
-        <p style={{fontSize:12,color:'#6b7280',marginBottom:14}}>{currentUser}님의 근무일 기준 · 근무일로부터 1개월 이내 보상 여부 확인</p>
+        <p style={{fontSize:12,color:'#6b7280',marginBottom:14}}>{currentUser}님의 근무일 기준 · 근무일로부터 1개월 이내 대체휴무 사용 여부 확인</p>
         {!checksReady && <div style={{background:'#fef3c7',borderRadius:8,padding:'8px 12px',fontSize:12,color:'#92400e',marginBottom:12}}>⚠️ weekend_checks 테이블을 먼저 생성해주세요 (Supabase SQL Editor)</div>}
         {workItems.length === 0 ? (
           <p style={{color:'#9ca3af',fontSize:13,textAlign:'center',padding:'12px 0'}}>주말/공휴일 근무 기록 없음</p>
@@ -874,7 +876,7 @@ function StatsTab({ scheduleMap, currentUser }) {
               </span>
               {dLeft > 0
                 ? <span style={{fontSize:12,color:'#ea580c',fontWeight:700,whiteSpace:'nowrap'}}>D-{dLeft}일</span>
-                : <span style={{fontSize:12,color:'#9ca3af',whiteSpace:'nowrap'}}>기간만료</span>}
+                : <span style={{fontSize:12,color:'#dc2626',fontWeight:700,whiteSpace:'nowrap'}}>기한초과</span>}
             </div>
           );
         })}
@@ -973,27 +975,26 @@ function WeatherView() {
   );
 }
 
-// ── 헤더 공정성 배지 (7번 항목: 균등 분배) ──
-function FairnessIndicator({ scheduleMap }) {
-  const START = '2026-04-17';
-  const END   = '2027-04-16';
+// ── 헤더 공정성 배지 ──
+const START_DATE = '2026-04-17';
+const END_DATE   = '2027-04-16';
+const TOTAL_PERIOD_DAYS = (new Date(END_DATE) - new Date(START_DATE)) / (1000 * 60 * 60 * 24) + 1; // 365
+const BASE_DAYS = TOTAL_PERIOD_DAYS / 2; // 182.5
 
-  const all = Object.entries(scheduleMap).filter(([k]) => k >= START && k <= END);
+function FairnessIndicator({ scheduleMap }) {
+  const all = Object.entries(scheduleMap).filter(([k]) => k >= START_DATE && k <= END_DATE);
   const hjDays = all.filter(([,v]) => v.worker === '효중').length;
   const msDays = all.filter(([,v]) => v.worker === '민수').length;
-  const totalDays = hjDays + msDays;
-  // 전체 근무일의 절반을 기준일로 (균등 분배)
-  const BASE = Math.ceil(totalDays / 2);
 
-  const hjColor = hjDays >= BASE ? '#6ee7b7' : '#fdba74';
-  const msColor = msDays >= BASE ? '#6ee7b7' : '#fdba74';
+  const hjColor = hjDays >= BASE_DAYS ? '#6ee7b7' : '#fdba74';
+  const msColor = msDays >= BASE_DAYS ? '#6ee7b7' : '#fdba74';
 
   return (
     <div className="fair-badge">
       <span>⚖️</span>
-      <span className="fair-badge-item" style={{color: hjColor}}>효중 {hjDays}/{BASE}일</span>
+      <span className="fair-badge-item" style={{color: hjColor}}>효중 {hjDays}/{BASE_DAYS}일</span>
       <span className="fair-badge-sep">|</span>
-      <span className="fair-badge-item" style={{color: msColor}}>민수 {msDays}/{BASE}일</span>
+      <span className="fair-badge-item" style={{color: msColor}}>민수 {msDays}/{BASE_DAYS}일</span>
     </div>
   );
 }
