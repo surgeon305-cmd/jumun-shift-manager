@@ -49,10 +49,19 @@
 
     /* ── 헤더 ── */
     .header { background: linear-gradient(135deg,#7c3aed,#db2777); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
-    .header-inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header-inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .header-title { font-size: 18px; font-weight: 700; }
     .header-user { font-size: 13px; opacity: .85; }
-    .logout-btn { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .fair-badge { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-size: 12px; background: rgba(255,255,255,.15); border-radius: 8px; padding: 4px 10px; }
+    .fair-badge-item { font-weight: 700; white-space: nowrap; }
+    .fair-badge-sep { opacity: .5; }
+    .logout-btn { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    @media(max-width:480px){
+      .header-title { font-size: 15px; }
+      .fair-badge { font-size: 11px; padding: 3px 8px; gap: 4px; }
+      .logout-btn { padding: 5px 10px; font-size: 12px; }
+    }
 
     /* ── 메인 ── */
     .main { max-width: 900px; margin: 0 auto; padding: 16px; }
@@ -88,8 +97,8 @@
     .cal-title { font-size: 18px; font-weight: 700; color: #1f2937; }
     .cal-legend { display: flex; gap: 8px; flex-wrap: wrap; }
     .legend-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
-    .legend-hj { background: #ede9fe; color: #6d28d9; }
-    .legend-ms { background: #fce7f3; color: #be185d; }
+    .legend-hj { background: #d6eef8; color: #1a5276; }
+    .legend-ms { background: #d4f1d4; color: #1e5631; }
     .legend-today-chip { background: #d1fae5; color: #065f46; }
 
     .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
@@ -101,8 +110,8 @@
     .cal-cell:hover { opacity: .85; filter: brightness(1.05); }
     .cal-cell.empty { background: #f9fafb; cursor: default; }
     .cal-cell.empty:hover { opacity: 1; filter: none; }
-    .cal-cell.hj { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
-    .cal-cell.ms { background: linear-gradient(135deg,#f093fb,#f5576c); color: #fff; }
+    .cal-cell.hj { background: linear-gradient(135deg,#a8d8ea,#7ec8e3); color: #1a5276; }
+    .cal-cell.ms { background: linear-gradient(135deg,#b8e6b8,#90d490); color: #1e5631; }
     .cal-cell.unset { background: #f3f4f6; color: #9ca3af; border: 2px dashed #d1d5db; }
     .cal-cell.is-today { border-color: #10b981 !important; box-shadow: 0 0 0 2px #10b98140; }
     .cal-cell.is-handover { border-color: #fbbf24 !important; box-shadow: 0 0 0 2px #fbbf2440; }
@@ -121,10 +130,12 @@
     .modal-field label { display: block; font-size: 13px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
     .seg-btns { display: flex; gap: 8px; }
     .seg-btn { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #e5e7eb; background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
-    .seg-btn.active-hj { border-color: #7c3aed; background: #faf5ff; color: #7c3aed; }
-    .seg-btn.active-ms { border-color: #db2777; background: #fdf2f8; color: #db2777; }
-    .seg-btn.active-yes { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
-    .seg-btn.active-no  { border-color: #e5e7eb; background: #f9fafb; color: #6b7280; }
+    .seg-btn.active-hj       { border-color: #7ec8e3; background: #d6eef8; color: #1a5276; }
+    .seg-btn.active-ms       { border-color: #90d490; background: #d4f1d4; color: #1e5631; }
+    .seg-btn.active-handover { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
+    .seg-btn.active-work     { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+    .seg-btn.active-holiday  { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+    .seg-btn.active-no       { border-color: #d1d5db; background: #f9fafb; color: #6b7280; }
     .modal-select { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
     .modal-select:focus { border-color: #7c3aed; }
     .modal-input { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
@@ -146,8 +157,8 @@
     .bar-name { width: 36px; font-size: 13px; color: #374151; }
     .bar-bg { flex: 1; background: #f3f4f6; border-radius: 99px; height: 22px; overflow: hidden; }
     .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 700; color: #fff; border-radius: 99px; min-width: 32px; }
-    .bar-hj { background: linear-gradient(90deg,#7c3aed,#a78bfa); }
-    .bar-ms { background: linear-gradient(90deg,#db2777,#f472b6); }
+    .bar-hj { background: linear-gradient(90deg,#7ec8e3,#a8d8ea); color: #1a5276; }
+    .bar-ms { background: linear-gradient(90deg,#90d490,#b8e6b8); color: #1e5631; }
     .fair-note { font-size: 11px; color: #9ca3af; margin-top: 2px; }
     .score-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .score-num { font-size: 32px; font-weight: 700; color: #1f2937; }
@@ -349,16 +360,16 @@ function DayModal({ dateKey, existing, onSave, onDelete, onClose }) {
         <div className="modal-field">
           <label>근무자</label>
           <div className="seg-btns">
-            <button className={`seg-btn ${worker==='효중'?'active-hj':''}`} onClick={()=>setWorker('효중')}>👨 효중</button>
-            <button className={`seg-btn ${worker==='민수'?'active-ms':''}`} onClick={()=>setWorker('민수')}>👨‍💼 민수</button>
+            <button className={`seg-btn ${worker==='효중'?'active-hj':''}`} onClick={()=>setWorker('효중')}>{worker==='효중'?'✅ ':''}👨 효중</button>
+            <button className={`seg-btn ${worker==='민수'?'active-ms':''}`} onClick={()=>setWorker('민수')}>{worker==='민수'?'✅ ':''}👨‍💼 민수</button>
           </div>
         </div>
 
         <div className="modal-field">
           <label>교대일 여부</label>
           <div className="seg-btns">
-            <button className={`seg-btn ${isHandover?'active-yes':''}`} onClick={()=>setIsHandover(true)}>🔄 교대</button>
-            <button className={`seg-btn ${!isHandover?'active-no':''}`} onClick={()=>setIsHandover(false)}>근무</button>
+            <button className={`seg-btn ${isHandover?'active-handover':''}`} onClick={()=>setIsHandover(true)}>{isHandover?'✅ ':''}🔄 교대</button>
+            <button className={`seg-btn ${!isHandover?'active-work':''}`} onClick={()=>setIsHandover(false)}>{!isHandover?'✅ ':''}근무</button>
           </div>
         </div>
 
@@ -374,8 +385,8 @@ function DayModal({ dateKey, existing, onSave, onDelete, onClose }) {
         <div className="modal-field">
           <label>공휴일</label>
           <div className="seg-btns">
-            <button className={`seg-btn ${isHoliday?'active-yes':''}`} onClick={()=>setIsHoliday(true)}>⭐ 공휴일</button>
-            <button className={`seg-btn ${!isHoliday?'active-no':''}`} onClick={()=>setIsHoliday(false)}>일반</button>
+            <button className={`seg-btn ${isHoliday?'active-holiday':''}`} onClick={()=>setIsHoliday(true)}>{isHoliday?'✅ ':''}⭐ 공휴일</button>
+            <button className={`seg-btn ${!isHoliday?'active-no':''}`} onClick={()=>setIsHoliday(false)}>{!isHoliday?'✅ ':''}일반</button>
           </div>
         </div>
 
@@ -439,7 +450,7 @@ function CalendarView({ scheduleMap, currentUser, year, month, onCellClick }) {
           return (
             <div key={key} className={cls} onClick={() => onCellClick(key, sc)}>
               <div className="cell-date">
-                <span style={{color: sc ? '#fff' : isSun ? '#ef4444' : isSat ? '#93c5fd' : ''}}>{d}</span>
+                <span style={{color: sc ? (sc.worker==='효중' ? '#1a5276' : '#1e5631') : isSun ? '#ef4444' : isSat ? '#93c5fd' : ''}}>{d}</span>
                 {isToday && <span style={{fontSize:10}}>📍</span>}
               </div>
               {sc?.is_holiday && <div className="cell-holiday">{sc.holiday_name || '공휴일'}</div>}
@@ -565,7 +576,7 @@ function FairnessReport({ scheduleMap }) {
           <span className={wDiff<=2?'fair-ok':'fair-warn'}>{wDiff<=2?'✅ 균형':'⚠️ 주의'}</span>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {[['효중',hjWknd,'#ede9fe','#6d28d9'],['민수',msWknd,'#fce7f3','#be185d']].map(([n,v,bg,c])=>(
+          {[['효중',hjWknd,'#d6eef8','#1a5276'],['민수',msWknd,'#d4f1d4','#1e5631']].map(([n,v,bg,c])=>(
             <div key={n} style={{background:bg,borderRadius:8,padding:'10px',textAlign:'center'}}>
               <div style={{fontSize:12,color:'#6b7280'}}>{n}</div>
               <div style={{fontSize:22,fontWeight:700,color:c}}>{v}일</div>
@@ -643,6 +654,33 @@ function WeatherView() {
         <div className="w-stat w-wave"><div className="w-stat-label">파고</div><div className="w-stat-val">0.5m</div></div>
       </div>
       <div className="weather-ok">✅ 배편 운항 가능 (양호한 기상 상태)</div>
+    </div>
+  );
+}
+
+// ── 헤더 공정성 배지 ──
+function FairnessIndicator({ scheduleMap }) {
+  const START = '2026-04-17';
+  const END   = '2027-04-16';
+  const HJ_BASE = 183;
+  const MS_BASE = 182;
+
+  const all = Object.entries(scheduleMap).filter(([k]) => k >= START && k <= END);
+  const hjDays = all.filter(([,v]) => v.worker === '효중').length;
+  const msDays = all.filter(([,v]) => v.worker === '민수').length;
+
+  const hjDiff = hjDays - HJ_BASE;
+  const msDiff = msDays - MS_BASE;
+
+  const diffColor = d => d > 0 ? '#fdba74' : d < 0 ? '#93c5fd' : '#6ee7b7';
+  const diffText  = d => d > 0 ? `+${d}일` : d < 0 ? `${d}일` : '±0';
+
+  return (
+    <div className="fair-badge">
+      <span>⚖️</span>
+      <span className="fair-badge-item" style={{color: diffColor(hjDiff)}}>효중 {diffText(hjDiff)}</span>
+      <span className="fair-badge-sep">|</span>
+      <span className="fair-badge-item" style={{color: diffColor(msDiff)}}>민수 {diffText(msDiff)}</span>
     </div>
   );
 }
@@ -742,7 +780,10 @@ function App() {
             <div className="header-title">🏝️ 주문도 교대관리</div>
             <div className="header-user">{currentUser}님</div>
           </div>
-          <button className="logout-btn" onClick={()=>{ setCurrentUser(null); setState('login'); }}>로그아웃</button>
+          <div className="header-right">
+            <FairnessIndicator scheduleMap={scheduleMap} />
+            <button className="logout-btn" onClick={()=>{ setCurrentUser(null); setState('login'); }}>로그아웃</button>
+          </div>
         </div>
       </div>
 
