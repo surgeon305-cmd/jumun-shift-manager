@@ -227,6 +227,12 @@
     /* ── 희망일 달력 셀 (5번 항목) ── */
     .cal-cell.wish-selected { background: linear-gradient(135deg,#a7f3d0,#6ee7b7); color: #065f46; border: 2px solid #059669 !important; }
 
+    /* ── 휴무일 탭 셀 색상 ── */
+    /* 효중 휴무 (민수 근무일) → 파스텔 주황 */
+    .cal-cell.off-hj { background: #FFD9B3; color: #E07820; }
+    /* 민수 휴무 (효중 근무일) → 파스텔 보라 */
+    .cal-cell.off-ms { background: #E8D9FF; color: #7C3AED; }
+
     /* ── 날씨 슬라이더 (2번 항목) ── */
     .weather-slider-wrap { margin: 14px 0; }
     .weather-slider-wrap input[type=range] { width: 100%; accent-color: #7c3aed; }
@@ -546,6 +552,77 @@ function CalendarView({ scheduleMap, currentUser, year, month, onCellClick }) {
         <span>🟡 테두리 = 교대일</span>
         <span>🟢 테두리 = 오늘</span>
         <span>탭하면 입력/수정</span>
+      </div>
+    </div>
+  );
+}
+
+// ── 휴무일 달력 (읽기 전용) ──
+function OffDayCalendarView({ scheduleMap, year, month }) {
+  const todayKey = today();
+  const firstDow = new Date(year, month, 1).getDay();
+  const totalDays = daysInMonth(year, month);
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  return (
+    <div className="cal-card">
+      <div className="cal-nav" style={{flexWrap:'wrap',gap:8}}>
+        <div className="cal-title">{year}년 {month+1}월</div>
+        <div className="cal-legend">
+          <span className="legend-chip" style={{background:'#FFD9B3',color:'#E07820'}}>😴 효중 휴무</span>
+          <span className="legend-chip" style={{background:'#E8D9FF',color:'#7C3AED'}}>😴 민수 휴무</span>
+          <span className="legend-chip legend-today-chip">📍 오늘</span>
+        </div>
+      </div>
+
+      <div className="cal-grid">
+        {DOW.map((d,i) => (
+          <div key={d} className={`cal-dow ${i===0?'sun':i===6?'sat':''}`}>{d}</div>
+        ))}
+        {cells.map((d,i) => {
+          if (!d) return <div key={`e${i}`} className="cal-cell empty" />;
+          const key = toKey(year, month, d);
+          const sc = scheduleMap[key];
+          const isToday = key === todayKey;
+          const dow = new Date(year, month, d).getDay();
+          const isSun = dow === 0, isSat = dow === 6;
+
+          // 휴무자 = 근무자의 반대편
+          const offWorker = sc ? (sc.worker === '효중' ? '민수' : '효중') : null;
+
+          // 효중 휴무(민수 근무) → off-hj 주황 / 민수 휴무(효중 근무) → off-ms 보라
+          let cls = 'cal-cell ';
+          if (!sc) cls += 'unset';
+          else if (sc.worker === '민수') cls += 'off-hj';
+          else cls += 'off-ms';
+          if (isToday) cls += ' is-today';
+          if (sc?.is_handover) cls += ' is-handover';
+
+          return (
+            <div key={key} className={cls} style={{cursor:'default'}}>
+              <div className="cell-date">
+                <span style={{color: !sc ? (isSun?'#ef4444':isSat?'#93c5fd':'') : 'inherit'}}>{d}</span>
+                {isToday && <span style={{fontSize:10}}>📍</span>}
+              </div>
+              {sc?.is_holiday && <div className="cell-holiday">{sc.holiday_name || '공휴일'}</div>}
+              {sc?.is_handover && <div className="cell-handover">🔄 {sc.handover_time?.split(' ')[0]}</div>}
+              {sc && (
+                <div className="cell-worker">
+                  {offWorker === '효중' ? '👨 효중' : '👨‍💼 민수'}
+                </div>
+              )}
+              {!sc && <div className="cell-edit-hint">미입력</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{marginTop:12,display:'flex',gap:12,fontSize:12,color:'#9ca3af',flexWrap:'wrap'}}>
+        <span>🟡 테두리 = 교대일</span>
+        <span>🟢 테두리 = 오늘</span>
+        <span>읽기 전용</span>
       </div>
     </div>
   );
@@ -1189,28 +1266,38 @@ function App() {
 
         {/* 탭 */}
         <div className="tabs">
-          {[['calendar','📅 스케줄'],['wish','💚 희망일'],['stats','📊 통계'],['weather','🌊 기상']].map(([k,l])=>(
+          {[['calendar','📅 근무 스케줄'],['offday','🏖️ 휴무일'],['wish','💚 희망일'],['stats','📊 통계'],['weather','🌊 기상']].map(([k,l])=>(
             <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
 
-        {/* 캘린더 탭 */}
+        {/* 근무 스케줄 / 휴무일 탭 공통 월 네비게이션 */}
+        {(tab === 'calendar' || tab === 'offday') && (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:12}}>
+            <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
+            <span style={{fontSize:16,fontWeight:700,color:'#1f2937',minWidth:80,textAlign:'center'}}>{calYear}년 {calMonth+1}월</span>
+            <button className="cal-nav-btn" onClick={nextMonth}>›</button>
+          </div>
+        )}
+
+        {/* 근무 스케줄 탭 */}
         {tab === 'calendar' && (
-          <>
-            {/* 월 네비게이션 */}
-            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:12}}>
-              <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
-              <span style={{fontSize:16,fontWeight:700,color:'#1f2937',minWidth:80,textAlign:'center'}}>{calYear}년 {calMonth+1}월</span>
-              <button className="cal-nav-btn" onClick={nextMonth}>›</button>
-            </div>
-            <CalendarView
-              scheduleMap={scheduleMap}
-              currentUser={currentUser}
-              year={calYear}
-              month={calMonth}
-              onCellClick={handleCellClick}
-            />
-          </>
+          <CalendarView
+            scheduleMap={scheduleMap}
+            currentUser={currentUser}
+            year={calYear}
+            month={calMonth}
+            onCellClick={handleCellClick}
+          />
+        )}
+
+        {/* 휴무일 탭 */}
+        {tab === 'offday' && (
+          <OffDayCalendarView
+            scheduleMap={scheduleMap}
+            year={calYear}
+            month={calMonth}
+          />
         )}
 
         {tab === 'wish' && <WishCalendar currentUser={currentUser} />}
