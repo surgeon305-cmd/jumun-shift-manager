@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>주문도 교대관리</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -210,8 +214,39 @@
       .cell-worker { font-size: 10px; }
       .cell-handover,.cell-holiday { font-size: 9px; }
     }
+    /* ── 모바일 달력 글씨 줄바꿈 방지 (3번 항목) ── */
+    @media(max-width:640px){
+      .cal-cell { min-height: 56px; padding: 2px; }
+      .cell-date { font-size: 10px; }
+      .cell-worker { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .cell-handover,.cell-holiday { font-size: 8px; white-space: nowrap; padding: 1px 2px; }
+      .cell-edit-hint { display: none; }
+    }
+
+    /* ── 희망일 달력 셀 (5번 항목) ── */
+    .cal-cell.wish-selected { background: linear-gradient(135deg,#a7f3d0,#6ee7b7); color: #065f46; border: 2px solid #059669 !important; }
+
+    /* ── 날씨 슬라이더 (2번 항목) ── */
+    .weather-slider-wrap { margin: 14px 0; }
+    .weather-slider-wrap input[type=range] { width: 100%; accent-color: #7c3aed; }
+    .weather-hour-info { background: #f0f9ff; border-radius: 10px; padding: 14px 16px; margin-top: 10px; display: flex; align-items: center; gap: 14px; }
+    .weather-hour-icon { font-size: 36px; line-height: 1; }
+    .weather-hour-desc { font-size: 17px; font-weight: 700; color: #1f2937; }
+    .weather-hour-sub { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+    /* ── 주말 체크리스트 (6번 항목) ── */
+    .checklist-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f3f4f6; }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item input[type=checkbox] { width:18px; height:18px; cursor:pointer; accent-color:#7c3aed; flex-shrink:0; }
   </style>
 </head>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+  }
+</script>
 <body>
 <div id="root"></div>
 
@@ -269,10 +304,10 @@ function LoginScreen({ onLogin }) {
 
   const verify = async (p) => {
     const entered = p.join('');
-    const { data } = await supabase.from('users').select('pin,is_first_login').eq('username', user).single();
+    const { data } = await supabase.from('users').select('pin,is_first_login,is_admin').eq('username', user).single();
     if (!data) { setErr('사용자 정보 없음'); setPin(['','','','']); return; }
     if (data.pin !== entered) { setErr('PIN이 틀렸습니다'); setPin(['','','','']); document.getElementById('p0')?.focus(); return; }
-    onLogin(user, data.is_first_login);
+    onLogin(user, data.is_first_login, data.is_admin || false);
   };
 
   return (
@@ -672,82 +707,282 @@ function FairnessReport({ scheduleMap }) {
   );
 }
 
-// ── 희망일 ──
-function WishForm({ currentUser }) {
+// ── 희망일 (달력 형식, Supabase 저장) (5번 항목) ──
+// SQL: CREATE TABLE wish_dates (id bigserial primary key, username text, date text, created_at timestamptz default now(), unique(username, date));
+function WishCalendar({ currentUser }) {
   const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth()+2 > 12 ? 1 : now.getMonth()+2;
-  const days = daysInMonth(y, m-1);
-  const [selected, setSelected] = useState([]);
+  let defYear = now.getFullYear(), defMonth = now.getMonth() + 1;
+  if (defMonth > 11) { defMonth = 0; defYear++; }
 
-  const toggle = d => setSelected(s => s.includes(d) ? s.filter(x=>x!==d) : [...s,d].sort((a,b)=>a-b));
+  const [wYear, setWYear] = useState(defYear);
+  const [wMonth, setWMonth] = useState(defMonth);
+  const [wishDates, setWishDates] = useState(new Set());
+  const todayKey = today();
+
+  useEffect(() => {
+    supabase.from('wish_dates').select('date').eq('username', currentUser)
+      .then(({ data }) => { if (data) setWishDates(new Set(data.map(r => r.date))); });
+  }, [currentUser]);
+
+  const toggleWish = async (dateKey) => {
+    const newSet = new Set(wishDates);
+    if (newSet.has(dateKey)) {
+      newSet.delete(dateKey);
+      await supabase.from('wish_dates').delete().eq('username', currentUser).eq('date', dateKey);
+    } else {
+      newSet.add(dateKey);
+      await supabase.from('wish_dates').insert({ username: currentUser, date: dateKey });
+    }
+    setWishDates(newSet);
+  };
+
+  const prevWM = () => { if (wMonth === 0) { setWYear(y=>y-1); setWMonth(11); } else setWMonth(m=>m-1); };
+  const nextWM = () => { if (wMonth === 11) { setWYear(y=>y+1); setWMonth(0); } else setWMonth(m=>m+1); };
+
+  const firstDow = new Date(wYear, wMonth, 1).getDay();
+  const totalDays = daysInMonth(wYear, wMonth);
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  const pfx = `${wYear}-${String(wMonth+1).padStart(2,'0')}`;
+  const selectedList = [...wishDates].filter(k => k.startsWith(pfx)).sort();
 
   return (
-    <div className="wish-card">
-      <h3 className="wish-title">💚 {m}월 희망 휴무일 입력</h3>
-      <p className="wish-sub">원하는 휴무일을 선택하세요 (다중 선택 가능)</p>
-      <div className="wish-grid">
-        {Array.from({length:days},(_,i)=>i+1).map(d=>{
-          const dow = new Date(y,m-1,d).getDay();
-          const isWknd = dow===0||dow===6;
+    <div className="cal-card">
+      <div style={{marginBottom:12}}>
+        <h3 style={{fontSize:16,fontWeight:700,color:'#1f2937',marginBottom:4}}>💚 희망 휴무일 선택</h3>
+        <p style={{fontSize:13,color:'#6b7280'}}>원하는 휴무일을 달력에서 선택 (Supabase 자동 저장)</p>
+      </div>
+
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:12}}>
+        <button className="cal-nav-btn" onClick={prevWM}>‹</button>
+        <span style={{fontSize:16,fontWeight:700,color:'#1f2937',minWidth:80,textAlign:'center'}}>{wYear}년 {wMonth+1}월</span>
+        <button className="cal-nav-btn" onClick={nextWM}>›</button>
+      </div>
+
+      <div className="cal-grid">
+        {DOW.map((d,i) => <div key={d} className={`cal-dow ${i===0?'sun':i===6?'sat':''}`}>{d}</div>)}
+        {cells.map((d,i) => {
+          if (!d) return <div key={`e${i}`} className="cal-cell empty" />;
+          const key = toKey(wYear, wMonth, d);
+          const isWish = wishDates.has(key);
+          const dow = new Date(wYear, wMonth, d).getDay();
+          const isPast = key < todayKey;
           return (
-            <button key={d} onClick={()=>toggle(d)}
-              className={`wish-day-btn ${isWknd?'weekend':''} ${selected.includes(d)?'selected':''}`}>
-              <div className="wish-day-label">{DOW[dow]}</div>
-              <div className="wish-day-num">{d}</div>
-            </button>
+            <div key={key}
+              className={`cal-cell ${isWish ? 'wish-selected' : 'unset'}`}
+              style={{opacity: isPast ? 0.45 : 1, cursor: isPast ? 'default' : 'pointer'}}
+              onClick={() => { if (!isPast) toggleWish(key); }}>
+              <div className="cell-date">
+                <span style={{color: dow===0?'#ef4444':dow===6?'#93c5fd':''}}>{d}</span>
+                {isWish && <span style={{fontSize:10}}>💚</span>}
+              </div>
+              {isWish && <div style={{fontSize:9,color:'#065f46',fontWeight:700,marginTop:2}}>희망</div>}
+            </div>
           );
         })}
       </div>
-      <div className="wish-summary">
-        <p className="wish-summary-text">💚 선택: {selected.length>0 ? selected.join(', ')+'일' : '없음'}</p>
-        {selected.length>1 && <p className="wish-summary-sub">평균 주기: 약 {Math.round((selected[selected.length-1]-selected[0])/(selected.length-1))}일</p>}
-      </div>
-      <button className="btn-primary" disabled={selected.length===0}
-        onClick={()=>alert(`${currentUser}님의 ${m}월 희망일 제출!\n${selected.join(', ')}일\n\n상대방 제출 후 자동 스케줄 생성됩니다.`)}>
-        {selected.length===0 ? '날짜를 선택하세요' : '제출하기'}
-      </button>
+
+      {selectedList.length > 0 ? (
+        <div style={{marginTop:12,background:'#d1fae5',borderRadius:10,padding:'12px 16px'}}>
+          <p style={{fontSize:13,fontWeight:600,color:'#065f46'}}>
+            💚 {wMonth+1}월 선택: {selectedList.map(k=>{const[,mm,dd]=k.split('-');return `${parseInt(dd)}일`;}).join(', ')}
+          </p>
+          <p style={{fontSize:11,color:'#059669',marginTop:2}}>총 {selectedList.length}일</p>
+        </div>
+      ) : (
+        <div style={{marginTop:12,color:'#9ca3af',fontSize:13,textAlign:'center'}}>이번 달 선택된 희망일 없음</div>
+      )}
     </div>
   );
 }
 
+// ── 통계 탭 (6번 항목: 공정성 리포트 + 주말/공휴일 체크리스트) ──
+// SQL: CREATE TABLE weekend_checks (id bigserial primary key, username text, date text, checked boolean default false, created_at timestamptz default now(), unique(username, date));
+function StatsTab({ scheduleMap, currentUser }) {
+  const [checks, setChecks] = useState({});
+
+  useEffect(() => {
+    supabase.from('weekend_checks').select('date,checked').eq('username', currentUser)
+      .then(({ data }) => {
+        if (data) {
+          const m = {};
+          data.forEach(r => { m[r.date] = r.checked; });
+          setChecks(m);
+        }
+      });
+  }, [currentUser]);
+
+  const workItems = Object.entries(scheduleMap)
+    .filter(([k, v]) => {
+      if (v.worker !== currentUser) return false;
+      const dow = new Date(k + 'T12:00:00').getDay();
+      return dow === 0 || dow === 6 || v.is_holiday;
+    })
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const toggleCheck = async (dateKey) => {
+    const newVal = !checks[dateKey];
+    setChecks(c => ({ ...c, [dateKey]: newVal }));
+    const { data } = await supabase.from('weekend_checks').select('id').eq('username', currentUser).eq('date', dateKey).maybeSingle();
+    if (data) {
+      await supabase.from('weekend_checks').update({ checked: newVal }).eq('id', data.id);
+    } else {
+      await supabase.from('weekend_checks').insert({ username: currentUser, date: dateKey, checked: newVal });
+    }
+  };
+
+  const calcDaysLeft = (dateKey) => {
+    const worked = new Date(dateKey + 'T12:00:00');
+    const deadline = new Date(worked);
+    deadline.setMonth(deadline.getMonth() + 1);
+    return Math.ceil((deadline - new Date()) / 86400000);
+  };
+
+  return (
+    <>
+      <FairnessReport scheduleMap={scheduleMap} />
+      <div className="fair-card">
+        <div className="fair-title">🗓️ 주말/공휴일 근무 체크리스트</div>
+        <p style={{fontSize:12,color:'#6b7280',marginBottom:14}}>{currentUser}님의 근무일 기준 · 근무일로부터 1개월 이내 보상 여부 확인</p>
+        {workItems.length === 0 ? (
+          <p style={{color:'#9ca3af',fontSize:13,textAlign:'center',padding:'12px 0'}}>주말/공휴일 근무 기록 없음</p>
+        ) : workItems.map(([k, v]) => {
+          const [,mm,dd] = k.split('-');
+          const dow = new Date(k+'T12:00:00').getDay();
+          const dLeft = calcDaysLeft(k);
+          const checked = checks[k] || false;
+          return (
+            <div key={k} className="checklist-item">
+              <input type="checkbox" checked={checked} onChange={() => toggleCheck(k)} />
+              <span style={{flex:1,fontSize:14,color:checked?'#9ca3af':'#1f2937',textDecoration:checked?'line-through':'none'}}>
+                {parseInt(mm)}/{parseInt(dd)} ({DOW[dow]}) 근무
+                {v.is_holiday && <span style={{fontSize:10,background:'#ef4444',color:'#fff',borderRadius:4,padding:'1px 4px',marginLeft:6}}>{v.holiday_name||'공휴일'}</span>}
+                {(dow===0||dow===6) && !v.is_holiday && <span style={{fontSize:10,background:'#3b82f6',color:'#fff',borderRadius:4,padding:'1px 4px',marginLeft:6}}>주말</span>}
+              </span>
+              {dLeft > 0
+                ? <span style={{fontSize:12,color:'#ea580c',fontWeight:700,whiteSpace:'nowrap'}}>D-{dLeft}일</span>
+                : <span style={{fontSize:12,color:'#9ca3af',whiteSpace:'nowrap'}}>기간만료</span>}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// ── WMO 날씨 코드 (2번 항목) ──
+const WMO_DESC = {
+  0:'맑음',1:'대체로 맑음',2:'부분 흐림',3:'흐림',
+  45:'안개',48:'안개(서리)',51:'약한 이슬비',53:'이슬비',55:'강한 이슬비',
+  61:'약한 비',63:'비',65:'강한 비',71:'약한 눈',73:'눈',75:'강한 눈',
+  77:'눈알',80:'소나기',81:'강한 소나기',82:'폭우',
+  85:'약한 눈 소나기',86:'강한 눈 소나기',
+  95:'뇌우',96:'약한 우박 뇌우',99:'강한 우박 뇌우'
+};
+const WMO_ICON = {
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+  45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',
+  61:'🌧️',63:'🌧️',65:'⛈️',71:'🌨️',73:'🌨️',75:'❄️',
+  77:'🌨️',80:'🌦️',81:'🌧️',82:'⛈️',
+  85:'🌨️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️'
+};
+
 // ── 기상 ──
 function WeatherView() {
+  const [hourIdx, setHourIdx] = useState(new Date().getHours());
+  const [hourly, setHourly] = useState(null);
+  const [fetchErr, setFetchErr] = useState(false);
+
+  useEffect(() => {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.7&longitude=126.3&hourly=temperature_2m,precipitation_probability,weathercode,windspeed_10m&timezone=Asia%2FSeoul&forecast_days=1')
+      .then(r => r.json())
+      .then(d => setHourly({
+        temps: d.hourly.temperature_2m,
+        precip: d.hourly.precipitation_probability,
+        codes: d.hourly.weathercode,
+        winds: d.hourly.windspeed_10m
+      }))
+      .catch(() => setFetchErr(true));
+  }, []);
+
+  const code = hourly ? (hourly.codes[hourIdx] ?? 0) : null;
+  const temp = hourly ? hourly.temps[hourIdx] : null;
+  const precip = hourly ? hourly.precip[hourIdx] : null;
+  const wind = hourly ? hourly.winds[hourIdx] : null;
+  const desc = code != null ? (WMO_DESC[code] ?? '알 수 없음') : '불러오는 중...';
+  const icon = code != null ? (WMO_ICON[code] ?? '❓') : '⏳';
+
   return (
     <div className="weather-card">
       <h3 className="weather-title">🌊 강화 서도 기상 정보</h3>
       <iframe className="weather-iframe"
         src="https://embed.windy.com/embed2.html?lat=37.7&lon=126.3&detailLat=37.7&detailLon=126.3&width=650&height=450&zoom=10&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
       />
-      <div className="weather-stats">
-        <div className="w-stat w-temp"><div className="w-stat-label">기온</div><div className="w-stat-val">23°C</div></div>
-        <div className="w-stat w-wind"><div className="w-stat-label">풍속</div><div className="w-stat-val">3m/s</div></div>
-        <div className="w-stat w-wave"><div className="w-stat-label">파고</div><div className="w-stat-val">0.5m</div></div>
+
+      {/* 시간대 슬라이더 */}
+      <div className="weather-slider-wrap">
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+          <span style={{fontSize:13,fontWeight:600,color:'#374151'}}>⏰ 시간대 선택</span>
+          <span style={{fontSize:14,fontWeight:700,color:'#7c3aed'}}>{hourIdx}시</span>
+        </div>
+        <input type="range" min={0} max={23} step={1} value={hourIdx}
+          onChange={e => setHourIdx(Number(e.target.value))} />
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#9ca3af',marginTop:2}}>
+          <span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>23시</span>
+        </div>
       </div>
-      <div className="weather-ok">✅ 배편 운항 가능 (양호한 기상 상태)</div>
+
+      {/* 시간대별 날씨 텍스트 */}
+      {fetchErr ? (
+        <div style={{background:'#fee2e2',borderRadius:10,padding:'12px 16px',color:'#991b1b',fontSize:13}}>날씨 데이터 불러오기 실패</div>
+      ) : (
+        <div className="weather-hour-info">
+          <div className="weather-hour-icon">{icon}</div>
+          <div>
+            <div className="weather-hour-desc">{desc}</div>
+            <div className="weather-hour-sub">
+              {temp != null ? `기온 ${temp}°C` : '기온 --'} &nbsp;·&nbsp;
+              {precip != null ? `강수확률 ${precip}%` : '강수확률 --'} &nbsp;·&nbsp;
+              {wind != null ? `풍속 ${wind}km/h` : '풍속 --'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="weather-stats" style={{marginTop:12}}>
+        <div className="w-stat w-temp"><div className="w-stat-label">기온</div><div className="w-stat-val">{temp != null ? `${temp}°C` : '--'}</div></div>
+        <div className="w-stat w-wind"><div className="w-stat-label">강수확률</div><div className="w-stat-val">{precip != null ? `${precip}%` : '--'}</div></div>
+        <div className="w-stat w-wave"><div className="w-stat-label">풍속</div><div className="w-stat-val">{wind != null ? `${wind}` : '--'}</div></div>
+      </div>
+      {code != null && code <= 3 && <div className="weather-ok">✅ 배편 운항 가능 (양호한 기상 상태)</div>}
+      {code != null && code > 3 && <div style={{marginTop:12,background:'#fee2e2',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#991b1b',fontWeight:600}}>⚠️ 기상 악화 가능성 — 운항 정보 확인 필요</div>}
     </div>
   );
 }
 
-// ── 헤더 공정성 배지 ──
+// ── 헤더 공정성 배지 (7번 항목: 균등 분배) ──
 function FairnessIndicator({ scheduleMap }) {
   const START = '2026-04-17';
   const END   = '2027-04-16';
-  const HJ_BASE = 183;
-  const MS_BASE = 182;
 
   const all = Object.entries(scheduleMap).filter(([k]) => k >= START && k <= END);
   const hjDays = all.filter(([,v]) => v.worker === '효중').length;
   const msDays = all.filter(([,v]) => v.worker === '민수').length;
+  const totalDays = hjDays + msDays;
+  // 전체 근무일의 절반을 기준일로 (균등 분배)
+  const BASE = Math.ceil(totalDays / 2);
 
-  const hjColor = hjDays >= HJ_BASE ? '#6ee7b7' : '#fdba74';
-  const msColor = msDays >= MS_BASE ? '#6ee7b7' : '#fdba74';
+  const hjColor = hjDays >= BASE ? '#6ee7b7' : '#fdba74';
+  const msColor = msDays >= BASE ? '#6ee7b7' : '#fdba74';
 
   return (
     <div className="fair-badge">
       <span>⚖️</span>
-      <span className="fair-badge-item" style={{color: hjColor}}>효중 {hjDays}/{HJ_BASE}일</span>
+      <span className="fair-badge-item" style={{color: hjColor}}>효중 {hjDays}/{BASE}일</span>
       <span className="fair-badge-sep">|</span>
-      <span className="fair-badge-item" style={{color: msColor}}>민수 {msDays}/{MS_BASE}일</span>
+      <span className="fair-badge-item" style={{color: msColor}}>민수 {msDays}/{BASE}일</span>
     </div>
   );
 }
@@ -756,6 +991,7 @@ function FairnessIndicator({ scheduleMap }) {
 function App() {
   const [state, setState] = useState('loading'); // loading | login | changePin | dashboard
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [scheduleMap, setScheduleMap] = useState({});
   const [tab, setTab] = useState('calendar');
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -794,16 +1030,25 @@ function App() {
     return () => supabase.removeChannel(channel);
   }, [state, loadSchedule]);
 
-  const handleLogin = (user, isFirst) => {
+  const handleLogin = (user, isFirst, isAdm) => {
     setCurrentUser(user);
+    setIsAdmin(isAdm || false);
     if (isFirst) setState('changePin');
     else setState('dashboard');
   };
 
   const handlePinChanged = () => setState('dashboard');
 
-  // 셀 클릭
+  // 셀 클릭 (4번 항목: 7일 이전 수정 제한)
+  // SQL: ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;
   const handleCellClick = (dateKey, existing) => {
+    if (!isAdmin) {
+      const sevenDaysAgo = addDays(today(), -7);
+      if (dateKey < sevenDaysAgo) {
+        alert('⛔ 수정 불가\n오늘로부터 7일 이전 날짜는 수정할 수 없습니다.\n(관리자 계정만 수정 가능)');
+        return;
+      }
+    }
     setModal({ dateKey, existing });
   };
 
@@ -931,7 +1176,7 @@ function App() {
 
         {/* 탭 */}
         <div className="tabs">
-          {[['calendar','📅 스케줄'],['wish','💚 희망일'],['fairness','⚖️ 공정성'],['weather','🌊 기상']].map(([k,l])=>(
+          {[['calendar','📅 스케줄'],['wish','💚 희망일'],['stats','📊 통계'],['weather','🌊 기상']].map(([k,l])=>(
             <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
@@ -955,8 +1200,8 @@ function App() {
           </>
         )}
 
-        {tab === 'wish' && <WishForm currentUser={currentUser} />}
-        {tab === 'fairness' && <FairnessReport scheduleMap={scheduleMap} />}
+        {tab === 'wish' && <WishCalendar currentUser={currentUser} />}
+        {tab === 'stats' && <StatsTab scheduleMap={scheduleMap} currentUser={currentUser} />}
         {tab === 'weather' && <WeatherView />}
       </div>
 
