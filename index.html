@@ -413,23 +413,33 @@ function DayModal({ dateKey, existing, onSave, onDelete, onClose }) {
 }
 
 // ── 자동입력 확인 모달 ──
-function ConfirmModal({ dateKey, fillKeys, worker, onBack, onSingleOnly, onAutoFill }) {
-  const startKey = fillKeys[0], endKey = fillKeys[fillKeys.length - 1];
-  const [,sm,sd] = startKey.split('-');
-  const [,em,ed] = endKey.split('-');
+function ConfirmModal({ forwardKeys, backwardKeys, worker, otherWorker, onBack, onSingleOnly, onAutoFill }) {
+  const total = forwardKeys.length + backwardKeys.length;
+  const wColor = w => w === '효중' ? '#1a5276' : '#1e5631';
+  const rangeLabel = keys => {
+    if (!keys.length) return '';
+    const [,sm,sd] = keys[0].split('-'), [,em,ed] = keys[keys.length-1].split('-');
+    return `${parseInt(sm)}/${parseInt(sd)} ~ ${parseInt(em)}/${parseInt(ed)}`;
+  };
   return (
     <div className="modal-bg" style={{zIndex:300}} onClick={e=>{ if(e.target===e.currentTarget) onBack(); }}>
       <div className="modal">
         <h3 className="modal-title">📋 자동 입력 확인</h3>
-        <p style={{fontSize:14,color:'#374151',marginBottom:10,lineHeight:1.7}}>
-          <strong style={{color:'#1a5276'}}>{worker}</strong>으로 교대일 저장 후<br/>
-          이후 날짜를 <strong>{fillKeys.length}일</strong> 자동 입력합니다.
-        </p>
-        <p style={{fontSize:13,color:'#6b7280',background:'#f3f4f6',borderRadius:8,padding:'8px 12px',marginBottom:20}}>
-          📅 {parseInt(sm)}월 {parseInt(sd)}일 ~ {parseInt(em)}월 {parseInt(ed)}일
-        </p>
+        <p style={{fontSize:14,color:'#374151',marginBottom:10}}>총 <strong>{total}일</strong>을 자동 입력합니다.</p>
+        {backwardKeys.length > 0 && (
+          <div style={{fontSize:13,background:'#f3f4f6',borderRadius:8,padding:'8px 12px',marginBottom:6}}>
+            <strong style={{color:wColor(otherWorker)}}>{otherWorker}</strong>
+            <span style={{color:'#6b7280'}}> {rangeLabel(backwardKeys)} ({backwardKeys.length}일)</span>
+          </div>
+        )}
+        {forwardKeys.length > 0 && (
+          <div style={{fontSize:13,background:'#f3f4f6',borderRadius:8,padding:'8px 12px',marginBottom:16}}>
+            <strong style={{color:wColor(worker)}}>{worker}</strong>
+            <span style={{color:'#6b7280'}}> {rangeLabel(forwardKeys)} ({forwardKeys.length}일)</span>
+          </div>
+        )}
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          <button className="modal-save" onClick={onAutoFill}>✅ 자동 입력 ({fillKeys.length}일)</button>
+          <button className="modal-save" onClick={onAutoFill}>✅ 자동 입력 ({total}일)</button>
           <button style={{padding:'11px',background:'#f0fdf4',color:'#1e5631',border:'2px solid #90d490',borderRadius:8,fontSize:15,fontWeight:600,cursor:'pointer'}} onClick={onSingleOnly}>이 날만 저장</button>
           <button className="modal-cancel" onClick={onBack}>← 뒤로</button>
         </div>
@@ -749,7 +759,7 @@ function App() {
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [modal, setModal] = useState(null); // { dateKey, existing }
-  const [confirmModal, setConfirmModal] = useState(null); // { dateKey, formData, fillKeys }
+  const [confirmModal, setConfirmModal] = useState(null); // { dateKey, formData, forwardKeys, backwardKeys, otherWorker }
 
   // 초기 로드
   useEffect(() => {
@@ -803,27 +813,41 @@ function App() {
     }
   };
 
-  // 자동채우기 날짜 계산
-  const calcFillKeys = (dateKey) => {
+  // 양방향 자동채우기 범위 계산
+  const calcAutoFillRange = (dateKey, worker) => {
+    const otherWorker = worker === '효중' ? '민수' : '효중';
+
+    // 이후: dateKey+1 ~ 다음 교대일 전날 (없으면 +7일)
     const nextHO = Object.entries(scheduleMap)
       .filter(([k, v]) => k > dateKey && v.is_handover)
       .sort(([a], [b]) => a.localeCompare(b))[0];
-    const keys = [];
+    const forwardKeys = [];
     let cur = addDays(dateKey, 1);
     if (nextHO) {
-      while (cur < nextHO[0]) { keys.push(cur); cur = addDays(cur, 1); }
+      while (cur < nextHO[0]) { forwardKeys.push(cur); cur = addDays(cur, 1); }
     } else {
-      for (let i = 0; i < 7; i++) { keys.push(cur); cur = addDays(cur, 1); }
+      for (let i = 0; i < 7; i++) { forwardKeys.push(cur); cur = addDays(cur, 1); }
     }
-    return keys;
+
+    // 이전: 직전 교대일 다음날 ~ dateKey-1 (없으면 -7일)
+    const prevHO = Object.entries(scheduleMap)
+      .filter(([k, v]) => k < dateKey && v.is_handover)
+      .sort(([a], [b]) => b.localeCompare(a))[0];
+    const backwardKeys = [];
+    const backEnd = addDays(dateKey, -1);
+    const backStart = prevHO ? addDays(prevHO[0], 1) : addDays(dateKey, -7);
+    let bcur = backStart;
+    while (bcur <= backEnd) { backwardKeys.push(bcur); bcur = addDays(bcur, 1); }
+
+    return { forwardKeys, backwardKeys, otherWorker };
   };
 
   // 저장
   const handleSave = async (dateKey, formData) => {
     if (formData.is_handover && dateKey >= today()) {
-      const fillKeys = calcFillKeys(dateKey);
-      if (fillKeys.length > 0) {
-        setConfirmModal({ dateKey, formData, fillKeys });
+      const { forwardKeys, backwardKeys, otherWorker } = calcAutoFillRange(dateKey, formData.worker);
+      if (forwardKeys.length + backwardKeys.length > 0) {
+        setConfirmModal({ dateKey, formData, forwardKeys, backwardKeys, otherWorker });
         return;
       }
     }
@@ -840,15 +864,21 @@ function App() {
     loadSchedule();
   };
 
-  // 확인 모달: 자동 입력
+  // 확인 모달: 자동 입력 (양방향)
   const handleConfirmAutoFill = async () => {
-    const { dateKey, formData, fillKeys } = confirmModal;
+    const { dateKey, formData, forwardKeys, backwardKeys, otherWorker } = confirmModal;
     await saveSingleDay(dateKey, formData);
-    const entries = fillKeys.map(k => {
+    const makeEntries = (keys, worker) => keys.map(k => {
       const hn = getHolidayName(k);
-      return { date: k, worker: formData.worker, is_handover: false, handover_time: null, is_holiday: !!hn, holiday_name: hn || null };
+      return { date: k, worker, is_handover: false, handover_time: null, is_holiday: !!hn, holiday_name: hn || null };
     });
-    await supabase.from('schedule').upsert(entries, { onConflict: 'date' });
+    const allEntries = [
+      ...makeEntries(forwardKeys, formData.worker),
+      ...makeEntries(backwardKeys, otherWorker),
+    ];
+    if (allEntries.length > 0) {
+      await supabase.from('schedule').upsert(allEntries, { onConflict: 'date' });
+    }
     setModal(null); setConfirmModal(null);
     loadSchedule();
   };
@@ -942,9 +972,10 @@ function App() {
       {/* 자동입력 확인 모달 */}
       {confirmModal && (
         <ConfirmModal
-          dateKey={confirmModal.dateKey}
-          fillKeys={confirmModal.fillKeys}
+          forwardKeys={confirmModal.forwardKeys}
+          backwardKeys={confirmModal.backwardKeys}
           worker={confirmModal.formData.worker}
+          otherWorker={confirmModal.otherWorker}
           onBack={() => setConfirmModal(null)}
           onSingleOnly={handleConfirmSingleOnly}
           onAutoFill={handleConfirmAutoFill}
