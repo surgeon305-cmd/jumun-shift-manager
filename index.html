@@ -1,1412 +1,808 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>섬 교대 근무 관리 시스템</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: #f5f7fa;
-            line-height: 1.5;
-        }
-        
-        /* 유틸리티 클래스 */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px;
-        }
-        
-        .flex {
-            display: flex;
-        }
-        
-        .flex-col {
-            flex-direction: column;
-        }
-        
-        .items-center {
-            align-items: center;
-        }
-        
-        .justify-between {
-            justify-content: space-between;
-        }
-        
-        .gap-1 { gap: 4px; }
-        .gap-2 { gap: 8px; }
-        .gap-3 { gap: 12px; }
-        .gap-4 { gap: 16px; }
-        
-        .grid {
-            display: grid;
-        }
-        
-        .grid-cols-2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .grid-cols-7 {
-            grid-template-columns: repeat(7, 1fr);
-        }
-        
-        @media (min-width: 768px) {
-            .md-grid-cols-4 {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .font-bold {
-            font-weight: 700;
-        }
-        
-        .font-semibold {
-            font-weight: 600;
-        }
-        
-        .rounded-lg {
-            border-radius: 8px;
-        }
-        
-        .rounded-xl {
-            border-radius: 12px;
-        }
-        
-        .rounded-2xl {
-            border-radius: 16px;
-        }
-        
-        .rounded-full {
-            border-radius: 9999px;
-        }
-        
-        .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .shadow-xl {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .p-2 { padding: 8px; }
-        .p-3 { padding: 12px; }
-        .p-4 { padding: 16px; }
-        .p-6 { padding: 24px; }
-        .p-8 { padding: 32px; }
-        
-        .px-2 { padding-left: 8px; padding-right: 8px; }
-        .px-3 { padding-left: 12px; padding-right: 12px; }
-        .px-4 { padding-left: 16px; padding-right: 16px; }
-        .py-1 { padding-top: 4px; padding-bottom: 4px; }
-        .py-2 { padding-top: 8px; padding-bottom: 8px; }
-        .py-8 { padding-top: 32px; padding-bottom: 32px; }
-        
-        .m-0 { margin: 0; }
-        .mb-1 { margin-bottom: 4px; }
-        .mb-2 { margin-bottom: 8px; }
-        .mb-3 { margin-bottom: 12px; }
-        .mb-4 { margin-bottom: 16px; }
-        .mb-6 { margin-bottom: 24px; }
-        .mb-8 { margin-bottom: 32px; }
-        .mt-1 { margin-top: 4px; }
-        .mt-2 { margin-top: 8px; }
-        .mt-4 { margin-top: 16px; }
-        
-        .w-full {
-            width: 100%;
-        }
-        
-        .min-h-screen {
-            min-height: 100vh;
-        }
-        
-        .overflow-hidden {
-            overflow: hidden;
-        }
-        
-        .overflow-x-auto {
-            overflow-x: auto;
-        }
-        
-        .whitespace-nowrap {
-            white-space: nowrap;
-        }
-        
-        /* 로그인 화면 */
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(to bottom right, #eff6ff, #faf5ff);
-            padding: 16px;
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            padding: 32px;
-            width: 100%;
-            max-width: 448px;
-        }
-        
-        .login-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-        
-        .login-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-        
-        .login-subtitle {
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        
-        .version-text {
-            font-size: 12px;
-            color: #9333ea;
-            margin-top: 8px;
-        }
-        
-        .user-select-btn {
-            padding: 16px;
-            border-radius: 8px;
-            border: 2px solid #e5e7eb;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .user-select-btn:hover {
-            border-color: #d1d5db;
-        }
-        
-        .user-select-btn.active-a {
-            border-color: #9333ea;
-            background: #faf5ff;
-        }
-        
-        .user-select-btn.active-b {
-            border-color: #ec4899;
-            background: #fdf2f8;
-        }
-        
-        .pin-input {
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-            text-align: center;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            margin: 0 4px;
-        }
-        
-        .pin-input:focus {
-            outline: none;
-            border-color: #9333ea;
-        }
-        
-        .error-text {
-            color: #ef4444;
-            font-size: 14px;
-            margin-top: 12px;
-        }
-        
-        .test-info {
-            font-size: 14px;
-            color: #6b7280;
-        }
-        
-        /* 헤더 */
-        .header {
-            background: linear-gradient(to right, #9333ea, #ec4899);
-            color: white;
-            padding: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-        }
-        
-        .header-subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .logout-btn {
-            background: white;
-            color: #9333ea;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .logout-btn:hover {
-            background: #f9fafb;
-        }
-        
-        /* 통계 카드 */
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .stat-label {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-        
-        .stat-value.purple { color: #9333ea; }
-        .stat-value.blue { color: #3b82f6; }
-        .stat-value.green { color: #10b981; }
-        .stat-value.orange { color: #f97316; }
-        
-        /* 알림 카드 */
-        .alert-card {
-            background: linear-gradient(to right, #fbbf24, #f97316);
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 24px;
-            margin-bottom: 24px;
-            color: #1f2937;
-        }
-        
-        .alert-icon {
-            font-size: 32px;
-        }
-        
-        .alert-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        /* 탭 버튼 */
-        .tab-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            white-space: nowrap;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .tab-btn.active {
-            background: #9333ea;
-            color: white;
-        }
-        
-        .tab-btn.inactive {
-            background: white;
-            color: #6b7280;
-        }
-        
-        .tab-btn.inactive:hover {
-            background: #f9fafb;
-        }
-        
-        /* 캘린더 */
-        .calendar-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .calendar-header {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 16px;
-        }
-        
-        .calendar-legend {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            font-size: 12px;
-        }
-        
-        .legend-item {
-            padding: 4px 12px;
-            border-radius: 9999px;
-        }
-        
-        .legend-a {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-        
-        .legend-b {
-            background: #fce7f3;
-            color: #ec4899;
-        }
-        
-        .legend-today {
-            background: #d1fae5;
-            color: #059669;
-        }
-        
-        .calendar-day-header {
-            text-align: center;
-            font-weight: 600;
-            color: #6b7280;
-            padding: 8px 0;
-            font-size: 14px;
-        }
-        
-        .calendar-cell {
-            min-height: 90px;
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-            border-radius: 8px;
-            position: relative;
-        }
-        
-        .worker-a {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .worker-b {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-        
-        .handover-day {
-            border: 3px solid #fbbf24 !important;
-            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-        }
-        
-        .today {
-            border: 3px solid #10b981 !important;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-        }
-        
-        .holiday {
-            background: #fef3c7 !important;
-            color: #92400e !important;
-        }
-        
-        .date-number {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        .handover-badge {
-            font-size: 11px;
-            background: #fbbf24;
-            color: #1f2937;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            display: inline-block;
-        }
-        
-        .holiday-badge {
-            font-size: 11px;
-            background: #ef4444;
-            color: white;
-            padding: 2px 4px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            display: inline-block;
-        }
-        
-        .worker-badge {
-            font-size: 11px;
-            margin-top: 4px;
-            font-weight: 600;
-        }
-        
-        /* 기상 위젯 */
-        .weather-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .weather-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 16px;
-        }
-        
-        .weather-iframe {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border-radius: 8px;
-            overflow: hidden;
-            border: none;
-        }
-        
-        .weather-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 16px;
-        }
-        
-        .weather-stat {
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .weather-stat.temp {
-            background: #dbeafe;
-        }
-        
-        .weather-stat.wind {
-            background: #d1fae5;
-        }
-        
-        .weather-stat.wave {
-            background: #f3e8ff;
-        }
-        
-        .weather-stat-label {
-            font-size: 14px;
-            color: #6b7280;
-        }
-        
-        .weather-stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        
-        .weather-stat-value.temp { color: #2563eb; }
-        .weather-stat-value.wind { color: #059669; }
-        .weather-stat-value.wave { color: #9333ea; }
-        
-        .weather-status {
-            margin-top: 16px;
-            padding: 12px;
-            background: #d1fae5;
-            border-radius: 8px;
-        }
-        
-        .weather-status-text {
-            font-size: 14px;
-            color: #065f46;
-            font-weight: 600;
-        }
-        
-        /* 희망일 입력 */
-        .wish-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .wish-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-        
-        .wish-subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 16px;
-        }
-        
-        .date-btn {
-            padding: 12px;
-            border-radius: 8px;
-            border: 2px solid #e5e7eb;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .date-btn:hover {
-            border-color: #d1d5db;
-        }
-        
-        .date-btn.selected {
-            border-color: #10b981;
-            background: #d1fae5;
-            font-weight: 700;
-        }
-        
-        .date-btn.weekend {
-            border-color: #d1d5db;
-            background: #f9fafb;
-        }
-        
-        .date-day {
-            font-size: 10px;
-            color: #6b7280;
-        }
-        
-        .date-number-btn {
-            font-weight: 600;
-        }
-        
-        .wish-summary {
-            background: #d1fae5;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .wish-summary-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #065f46;
-        }
-        
-        .wish-summary-detail {
-            font-size: 12px;
-            color: #059669;
-            margin-top: 4px;
-        }
-        
-        /* 공정성 리포트 */
-        .fairness-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 24px;
-        }
-        
-        .fairness-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 16px;
-        }
-        
-        .fairness-section {
-            margin-bottom: 16px;
-        }
-        
-        .fairness-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        
-        .fairness-label {
-            color: #6b7280;
-        }
-        
-        .fairness-status {
-            font-weight: 600;
-        }
-        
-        .fairness-status.good {
-            color: #10b981;
-        }
-        
-        .fairness-status.warning {
-            color: #f97316;
-        }
-        
-        .fairness-status.bad {
-            color: #ef4444;
-        }
-        
-        .progress-bar-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-        
-        .progress-label {
-            width: 48px;
-            font-size: 14px;
-        }
-        
-        .progress-bar-bg {
-            flex: 1;
-            background: #e5e7eb;
-            border-radius: 9999px;
-            height: 24px;
-            overflow: hidden;
-        }
-        
-        .progress-bar-fill {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .progress-bar-fill.purple {
-            background: #9333ea;
-        }
-        
-        .progress-bar-fill.pink {
-            background: #ec4899;
-        }
-        
-        .fairness-note {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-        
-        .fairness-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-        
-        .fairness-box {
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .fairness-box.purple {
-            background: #f3e8ff;
-        }
-        
-        .fairness-box.pink {
-            background: #fce7f3;
-        }
-        
-        .fairness-box-label {
-            font-size: 12px;
-            color: #6b7280;
-        }
-        
-        .fairness-box-value {
-            font-size: 24px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        
-        .fairness-box-value.purple {
-            color: #9333ea;
-        }
-        
-        .fairness-box-value.pink {
-            color: #ec4899;
-        }
-        
-        .fairness-score-container {
-            margin-top: 8px;
-        }
-        
-        .fairness-score-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        
-        .fairness-score-number {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1f2937;
-        }
-        
-        .fairness-score-icon {
-            font-size: 32px;
-        }
-        
-        .fairness-score-bar {
-            height: 16px;
-            background: #e5e7eb;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        
-        .fairness-score-fill {
-            height: 100%;
-            transition: width 0.3s;
-        }
-        
-        .fairness-score-fill.excellent {
-            background: #10b981;
-        }
-        
-        .fairness-score-fill.good {
-            background: #fbbf24;
-        }
-        
-        .fairness-score-fill.poor {
-            background: #ef4444;
-        }
-        
-        .fairness-score-description {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 8px;
-        }
-        
-        /* 버튼 */
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s;
-            width: 100%;
-            font-size: 16px;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        /* 푸터 */
-        .footer {
-            text-align: center;
-            padding: 32px 0;
-            color: #6b7280;
-            font-size: 14px;
-        }
-        
-        .footer-version {
-            font-size: 12px;
-            margin-top: 4px;
-        }
-        
-        /* 반응형 */
-        @media (max-width: 768px) {
-            .calendar-day-header {
-                font-size: 12px;
-            }
-            
-            .calendar-cell {
-                min-height: 80px;
-                padding: 4px;
-            }
-            
-            .date-number {
-                font-size: 12px;
-            }
-            
-            .handover-badge,
-            .holiday-badge,
-            .worker-badge {
-                font-size: 10px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>주문도 교대관리</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; }
+
+    /* ── 로그인 ── */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#667eea,#764ba2); padding: 16px; }
+    .login-card { background: #fff; border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .login-icon { font-size: 52px; text-align: center; margin-bottom: 12px; }
+    .login-title { font-size: 22px; font-weight: 700; text-align: center; color: #1f2937; }
+    .login-sub { font-size: 13px; color: #9ca3af; text-align: center; margin-top: 4px; margin-bottom: 24px; }
+    .user-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .user-btn { padding: 16px 8px; border-radius: 12px; border: 2px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .2s; text-align: center; }
+    .user-btn:hover { border-color: #c4b5fd; }
+    .user-btn.sel-a { border-color: #7c3aed; background: #faf5ff; }
+    .user-btn.sel-b { border-color: #db2777; background: #fdf2f8; }
+    .user-btn .u-icon { font-size: 28px; margin-bottom: 4px; }
+    .user-btn .u-name { font-weight: 600; font-size: 15px; color: #374151; }
+    .pin-label { font-size: 13px; font-weight: 600; color: #6b7280; margin-bottom: 10px; }
+    .pin-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; }
+    .pin-box { width: 52px; height: 52px; font-size: 22px; text-align: center; border: 2px solid #e5e7eb; border-radius: 10px; outline: none; transition: border .2s; }
+    .pin-box:focus { border-color: #7c3aed; }
+    .pin-err { color: #ef4444; font-size: 13px; text-align: center; min-height: 20px; margin-bottom: 8px; }
+    .pin-hint { font-size: 12px; color: #9ca3af; text-align: center; }
+
+    /* ── 비밀번호 변경 ── */
+    .change-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#667eea,#764ba2); padding: 16px; }
+    .change-card { background: #fff; border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .change-title { font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+    .change-sub { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .input-group input { width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; outline: none; }
+    .input-group input:focus { border-color: #7c3aed; }
+    .btn-primary { width: 100%; padding: 12px; background: linear-gradient(135deg,#7c3aed,#db2777); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── 헤더 ── */
+    .header { background: linear-gradient(135deg,#7c3aed,#db2777); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .header-inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header-title { font-size: 18px; font-weight: 700; }
+    .header-user { font-size: 13px; opacity: .85; }
+    .logout-btn { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+    /* ── 메인 ── */
+    .main { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+    /* ── 통계 ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+    @media(min-width:600px){ .stats-grid { grid-template-columns: repeat(4,1fr); } }
+    .stat-card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .stat-label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; }
+    .stat-val { font-size: 22px; font-weight: 700; }
+    .c-purple { color: #7c3aed; }
+    .c-blue   { color: #2563eb; }
+    .c-green  { color: #059669; }
+    .c-orange { color: #ea580c; }
+
+    /* ── 교대 알림 ── */
+    .alert-card { background: linear-gradient(135deg,#fbbf24,#f97316); border-radius: 14px; padding: 18px; margin-bottom: 16px; display: flex; gap: 14px; align-items: flex-start; }
+    .alert-icon { font-size: 32px; line-height: 1; }
+    .alert-title { font-size: 17px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+    .alert-info { font-size: 14px; color: #1f2937; line-height: 1.8; }
+
+    /* ── 탭 ── */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+    .tab-btn { flex-shrink: 0; padding: 8px 16px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .tab-btn.active { background: #7c3aed; color: #fff; }
+    .tab-btn.inactive { background: #fff; color: #6b7280; }
+
+    /* ── 캘린더 ── */
+    .cal-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-nav-btn { background: #f3f4f6; border: none; border-radius: 8px; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .cal-nav-btn:hover { background: #e5e7eb; }
+    .cal-title { font-size: 18px; font-weight: 700; color: #1f2937; }
+    .cal-legend { display: flex; gap: 8px; flex-wrap: wrap; }
+    .legend-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .legend-hj { background: #ede9fe; color: #6d28d9; }
+    .legend-ms { background: #fce7f3; color: #be185d; }
+    .legend-today-chip { background: #d1fae5; color: #065f46; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+    .cal-dow { text-align: center; font-size: 12px; font-weight: 700; color: #6b7280; padding: 8px 0; }
+    .cal-dow.sun { color: #ef4444; }
+    .cal-dow.sat { color: #3b82f6; }
+
+    .cal-cell { min-height: 78px; border-radius: 8px; padding: 5px; cursor: pointer; border: 2px solid transparent; position: relative; transition: all .15s; }
+    .cal-cell:hover { opacity: .85; filter: brightness(1.05); }
+    .cal-cell.empty { background: #f9fafb; cursor: default; }
+    .cal-cell.empty:hover { opacity: 1; filter: none; }
+    .cal-cell.hj { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
+    .cal-cell.ms { background: linear-gradient(135deg,#f093fb,#f5576c); color: #fff; }
+    .cal-cell.unset { background: #f3f4f6; color: #9ca3af; border: 2px dashed #d1d5db; }
+    .cal-cell.is-today { border-color: #10b981 !important; box-shadow: 0 0 0 2px #10b98140; }
+    .cal-cell.is-handover { border-color: #fbbf24 !important; box-shadow: 0 0 0 2px #fbbf2440; }
+
+    .cell-date { font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .cell-holiday { font-size: 10px; background: #ef4444; color: #fff; border-radius: 4px; padding: 1px 4px; margin-bottom: 2px; display: inline-block; }
+    .cell-handover { font-size: 10px; background: #fbbf24; color: #1f2937; border-radius: 4px; padding: 1px 4px; margin-bottom: 2px; display: inline-block; font-weight: 700; }
+    .cell-worker { font-size: 11px; font-weight: 600; margin-top: 2px; }
+    .cell-edit-hint { font-size: 9px; opacity: .7; margin-top: 2px; }
+
+    /* ── 팝업 ── */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .modal-title { font-size: 17px; font-weight: 700; color: #1f2937; margin-bottom: 16px; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { display: block; font-size: 13px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
+    .seg-btns { display: flex; gap: 8px; }
+    .seg-btn { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #e5e7eb; background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .seg-btn.active-hj { border-color: #7c3aed; background: #faf5ff; color: #7c3aed; }
+    .seg-btn.active-ms { border-color: #db2777; background: #fdf2f8; color: #db2777; }
+    .seg-btn.active-yes { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
+    .seg-btn.active-no  { border-color: #e5e7eb; background: #f9fafb; color: #6b7280; }
+    .modal-select { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
+    .modal-select:focus { border-color: #7c3aed; }
+    .modal-input { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
+    .modal-input:focus { border-color: #7c3aed; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+    .modal-save { flex: 1; padding: 11px; background: linear-gradient(135deg,#7c3aed,#db2777); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .modal-cancel { flex: 1; padding: 11px; background: #f3f4f6; color: #6b7280; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; }
+    .modal-delete { width: 100%; padding: 10px; background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+    /* ── 공정성 ── */
+    .fair-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+    .fair-title { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 16px; }
+    .fair-row { margin-bottom: 16px; }
+    .fair-row-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .fair-row-label { color: #6b7280; }
+    .fair-ok  { color: #059669; font-weight: 600; }
+    .fair-warn{ color: #ea580c; font-weight: 600; }
+    .bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .bar-name { width: 36px; font-size: 13px; color: #374151; }
+    .bar-bg { flex: 1; background: #f3f4f6; border-radius: 99px; height: 22px; overflow: hidden; }
+    .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 700; color: #fff; border-radius: 99px; min-width: 32px; }
+    .bar-hj { background: linear-gradient(90deg,#7c3aed,#a78bfa); }
+    .bar-ms { background: linear-gradient(90deg,#db2777,#f472b6); }
+    .fair-note { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .score-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .score-num { font-size: 32px; font-weight: 700; color: #1f2937; }
+    .score-bar-bg { background: #f3f4f6; border-radius: 99px; height: 14px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 99px; transition: width .5s; }
+    .score-excellent { background: linear-gradient(90deg,#059669,#34d399); }
+    .score-good      { background: linear-gradient(90deg,#d97706,#fbbf24); }
+    .score-poor      { background: linear-gradient(90deg,#dc2626,#f87171); }
+    .score-desc { font-size: 12px; color: #6b7280; margin-top: 6px; }
+
+    /* ── 기상 ── */
+    .weather-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+    .weather-title { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 14px; }
+    .weather-iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 10px; }
+    .weather-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
+    .w-stat { border-radius: 10px; padding: 12px; text-align: center; }
+    .w-stat-label { font-size: 12px; color: #6b7280; }
+    .w-stat-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+    .w-temp { background: #dbeafe; } .w-temp .w-stat-val { color: #1d4ed8; }
+    .w-wind { background: #d1fae5; } .w-wind .w-stat-val { color: #065f46; }
+    .w-wave { background: #ede9fe; } .w-wave .w-stat-val { color: #6d28d9; }
+    .weather-ok { margin-top: 12px; background: #d1fae5; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #065f46; font-weight: 600; }
+
+    /* ── 로딩 ── */
+    .loading-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #7c3aed; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 16px; color: #6b7280; }
+
+    /* ── 희망일 ── */
+    .wish-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 16px; }
+    .wish-title { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+    .wish-sub { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+    .wish-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 16px; }
+    .wish-day-btn { padding: 8px 4px; border-radius: 8px; border: 2px solid #e5e7eb; background: #fff; cursor: pointer; text-align: center; transition: all .2s; }
+    .wish-day-btn.weekend { background: #f9fafb; }
+    .wish-day-btn.selected { border-color: #059669; background: #d1fae5; font-weight: 700; }
+    .wish-day-label { font-size: 9px; color: #9ca3af; }
+    .wish-day-num { font-size: 13px; font-weight: 600; }
+    .wish-summary { background: #d1fae5; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; }
+    .wish-summary-text { font-size: 13px; font-weight: 600; color: #065f46; }
+    .wish-summary-sub { font-size: 11px; color: #059669; margin-top: 2px; }
+
+    /* ── 반응형 ── */
+    @media(max-width:480px){
+      .cal-cell { min-height: 64px; padding: 3px; }
+      .cell-date { font-size: 11px; }
+      .cell-worker { font-size: 10px; }
+      .cell-handover,.cell-holiday { font-size: 9px; }
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
 
-        // 수정된 샘플 데이터
-        const SAMPLE_SCHEDULE = {
-            '2026-06': [
-                { date: 1, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 2, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 3, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 4, worker: 'A', isHandover: true, handoverTime: '1항차', isWeekend: false, isHoliday: false },
-                { date: 5, worker: 'B', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 6, worker: 'B', isHandover: false, isWeekend: false, isHoliday: true, holidayName: '현충일' },
-                { date: 7, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 8, worker: 'B', isHandover: true, handoverTime: '1항차', isWeekend: true, isHoliday: false },
-                { date: 9, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 10, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 11, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 12, worker: 'A', isHandover: true, handoverTime: '1항차', isWeekend: false, isHoliday: false },
-                { date: 13, worker: 'B', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 14, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 15, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 16, worker: 'B', isHandover: true, handoverTime: '2항차', isWeekend: false, isHoliday: false },
-                { date: 17, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 18, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 19, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 20, worker: 'A', isHandover: true, handoverTime: '1항차', isWeekend: false, isHoliday: false },
-                { date: 21, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 22, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 23, worker: 'B', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 24, worker: 'B', isHandover: true, handoverTime: '1항차', isWeekend: false, isHoliday: false },
-                { date: 25, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 26, worker: 'A', isHandover: false, isWeekend: false, isHoliday: false },
-                { date: 27, worker: 'A', isHandover: true, handoverTime: '1항차', isWeekend: false, isHoliday: false },
-                { date: 28, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 29, worker: 'B', isHandover: false, isWeekend: true, isHoliday: false },
-                { date: 30, worker: 'B', isHandover: false, isWeekend: false, isHoliday: false },
-            ]
-        };
+// ── Supabase 초기화 ──
+const SUPA_URL = 'https://qwudsfmedjunkuqkgrpv.supabase.co';
+const SUPA_KEY = 'sb_publishable_zB6omtQKHnMLVvWDd91LOg_CzbJKlya';
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-        const USERS = {
-            A: { name: '근무자 A', pin: '1234' },
-            B: { name: '근무자 B', pin: '5678' }
-        };
+// ── 상수 ──
+const USERS = { '효중': '효중', '민수': '민수' };
+const HOLIDAYS = {
+  '2026-03-01': '삼일절', '2026-05-05': '어린이날',
+  '2026-05-15': '부처님오신날', '2026-06-06': '현충일',
+  '2026-08-15': '광복절', '2026-09-25': '추석',
+  '2026-09-26': '추석', '2026-09-27': '추석',
+  '2026-10-03': '개천절', '2026-10-09': '한글날',
+};
+const FERRY = ['1항차 (07:30)', '2항차 (13:00)', '3항차 (16:30)'];
+const DOW = ['일','월','화','수','목','금','토'];
 
-        // 로그인 컴포넌트
-        function LoginScreen({ onLogin }) {
-            const [selectedUser, setSelectedUser] = useState('A');
-            const [pin, setPin] = useState(['', '', '', '']);
-            const [error, setError] = useState('');
+// ── 날짜 유틸 ──
+const toKey = (y, m, d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const today = () => { const t = new Date(); return toKey(t.getFullYear(), t.getMonth(), t.getDate()); };
+const daysInMonth = (y, m) => new Date(y, m+1, 0).getDate();
 
-            const handlePinChange = (index, value) => {
-                if (value.length > 1) return;
-                const newPin = [...pin];
-                newPin[index] = value;
-                setPin(newPin);
+// ── 로딩 화면 ──
+function LoadingScreen() {
+  return (
+    <div className="loading-wrap">
+      <div className="spinner" />
+      <p className="loading-text">불러오는 중...</p>
+    </div>
+  );
+}
 
-                if (value && index < 3) {
-                    document.getElementById(`pin-${index + 1}`).focus();
-                }
+// ── 로그인 ──
+function LoginScreen({ onLogin }) {
+  const [user, setUser] = useState('효중');
+  const [pin, setPin] = useState(['','','','']);
+  const [err, setErr] = useState('');
 
-                if (index === 3 && value) {
-                    checkPin([...newPin.slice(0, 3), value]);
-                }
-            };
+  const handlePin = (i, v) => {
+    if (v.length > 1) return;
+    const p = [...pin]; p[i] = v; setPin(p);
+    if (v && i < 3) document.getElementById(`p${i+1}`)?.focus();
+    if (i === 3 && v) verify([...p.slice(0,3), v]);
+  };
 
-            const checkPin = (pinArray) => {
-                const enteredPin = pinArray.join('');
-                if (USERS[selectedUser].pin === enteredPin) {
-                    onLogin(selectedUser);
-                } else {
-                    setError('PIN이 올바르지 않습니다.');
-                    setPin(['', '', '', '']);
-                    document.getElementById('pin-0').focus();
-                }
-            };
+  const verify = async (p) => {
+    const entered = p.join('');
+    const { data } = await supabase.from('users').select('pin,is_first_login').eq('username', user).single();
+    if (!data) { setErr('사용자 정보 없음'); setPin(['','','','']); return; }
+    if (data.pin !== entered) { setErr('PIN이 틀렸습니다'); setPin(['','','','']); document.getElementById('p0')?.focus(); return; }
+    onLogin(user, data.is_first_login);
+  };
 
-            return (
-                <div className="login-container">
-                    <div className="login-card">
-                        <div className="text-center mb-8">
-                            <div className="login-icon">🏝️</div>
-                            <h1 className="login-title">섬 교대 근무 관리</h1>
-                            <p className="login-subtitle">로그인하여 시작하세요</p>
-                            <p className="version-text">v1.2 (프로덕션)</p>
-                        </div>
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-icon">🏝️</div>
+        <h1 className="login-title">주문도 교대관리</h1>
+        <p className="login-sub">v2.0 · 실시간 동기화</p>
 
-                        <div className="mb-6">
-                            <label className="fairness-label mb-3" style={{display: 'block', fontWeight: 600}}>사용자 선택</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => setSelectedUser('A')}
-                                    className={`user-select-btn ${selectedUser === 'A' ? 'active-a' : ''}`}
-                                >
-                                    <div style={{fontSize: '24px', marginBottom: '4px'}}>👤</div>
-                                    <div className="font-semibold">근무자 A</div>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedUser('B')}
-                                    className={`user-select-btn ${selectedUser === 'B' ? 'active-b' : ''}`}
-                                >
-                                    <div style={{fontSize: '24px', marginBottom: '4px'}}>👤</div>
-                                    <div className="font-semibold">근무자 B</div>
-                                </button>
-                            </div>
-                        </div>
+        <div className="user-grid">
+          {['효중','민수'].map(u => (
+            <button key={u} className={`user-btn ${user===u ? (u==='효중'?'sel-a':'sel-b') : ''}`} onClick={()=>{ setUser(u); setPin(['','','','']); setErr(''); }}>
+              <div className="u-icon">{u==='효중'?'👨':'👨‍💼'}</div>
+              <div className="u-name">{u}</div>
+            </button>
+          ))}
+        </div>
 
-                        <div className="mb-6">
-                            <label className="fairness-label mb-3" style={{display: 'block', fontWeight: 600}}>PIN 입력</label>
-                            <div className="flex" style={{justifyContent: 'center'}}>
-                                {pin.map((digit, index) => (
-                                    <input
-                                        key={index}
-                                        id={`pin-${index}`}
-                                        type="password"
-                                        maxLength="1"
-                                        value={digit}
-                                        onChange={(e) => handlePinChange(index, e.target.value)}
-                                        className="pin-input"
-                                        autoFocus={index === 0}
-                                    />
-                                ))}
-                            </div>
-                            {error && (
-                                <p className="error-text text-center">{error}</p>
-                            )}
-                        </div>
+        <p className="pin-label">PIN 입력</p>
+        <div className="pin-row">
+          {pin.map((d,i) => (
+            <input key={i} id={`p${i}`} type="password" maxLength={1} value={d}
+              className="pin-box" autoFocus={i===0}
+              onChange={e => handlePin(i, e.target.value)} />
+          ))}
+        </div>
+        <p className="pin-err">{err}</p>
+        <p className="pin-hint">초기 PIN: 0000</p>
+      </div>
+    </div>
+  );
+}
 
-                        <div className="text-center test-info">
-                            <p>테스트 PIN:</p>
-                            <p>근무자 A: 1234 | 근무자 B: 5678</p>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
+// ── 비밀번호 변경 ──
+function ChangePinScreen({ username, onDone }) {
+  const [n1, setN1] = useState('');
+  const [n2, setN2] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
 
-        // 통계 카드 컴포넌트
-        function StatsCard({ currentUser, schedule }) {
-            const userSchedule = schedule.filter(day => day.worker === currentUser);
-            const workDays = userSchedule.length;
-            const workHours = workDays * 24;
-            const restDays = 30 - workDays;
-            
-            const currentDate = 10;
-            const nextHandover = schedule.find(day => 
-                day.isHandover && 
-                day.date > currentDate && 
-                (day.worker === currentUser || schedule[schedule.indexOf(day) - 1]?.worker === currentUser)
-            );
+  const submit = async () => {
+    if (n1.length < 4) { setErr('4자리 이상 입력하세요'); return; }
+    if (n1 !== n2) { setErr('PIN이 일치하지 않습니다'); return; }
+    if (n1 === '0000') { setErr('0000은 사용할 수 없습니다'); return; }
+    setLoading(true);
+    await supabase.from('users').update({ pin: n1, is_first_login: false }).eq('username', username);
+    setLoading(false);
+    onDone();
+  };
 
-            return (
-                <div className="grid grid-cols-2 md-grid-cols-4 gap-4 mb-6">
-                    <div className="stat-card">
-                        <div className="stat-label">근무일수</div>
-                        <div className="stat-value purple">{workDays}일</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">실근무시간</div>
-                        <div className="stat-value blue">{workHours}시간</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">휴식일수</div>
-                        <div className="stat-value green">{restDays}일</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-label">다음교대</div>
-                        <div className="stat-value orange" style={{fontSize: '18px'}}>
-                            {nextHandover ? `6/${nextHandover.date} ${nextHandover.handoverTime}` : '-'}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
+  return (
+    <div className="change-wrap">
+      <div className="change-card">
+        <div style={{fontSize:40,marginBottom:12}}>🔐</div>
+        <h2 className="change-title">PIN 변경</h2>
+        <p className="change-sub">{username}님, 초기 PIN을 변경해주세요.</p>
+        <div className="input-group">
+          <label>새 PIN (숫자 4자리 이상)</label>
+          <input type="password" value={n1} onChange={e=>setN1(e.target.value)} placeholder="새 PIN 입력" className="modal-input" />
+        </div>
+        <div className="input-group">
+          <label>PIN 확인</label>
+          <input type="password" value={n2} onChange={e=>setN2(e.target.value)} placeholder="PIN 재입력" className="modal-input" />
+        </div>
+        {err && <p style={{color:'#ef4444',fontSize:13,marginBottom:12}}>{err}</p>}
+        <button className="btn-primary" onClick={submit} disabled={loading}>
+          {loading ? '저장 중...' : '변경하기'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-        // 캘린더 컴포넌트
-        function Calendar({ schedule, currentUser }) {
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const currentDate = 10;
-            
-            return (
-                <div className="calendar-card">
-                    <div className="flex" style={{justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '8px'}}>
-                        <h2 className="calendar-header" style={{margin: 0}}>📅 2026년 6월 스케줄</h2>
-                        <div className="calendar-legend">
-                            <span className="legend-item legend-a">🔵 A 근무</span>
-                            <span className="legend-item legend-b">🟢 B 근무</span>
-                            <span className="legend-item legend-today">📍 오늘</span>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-7 gap-1">
-                        {days.map(day => (
-                            <div key={day} className="calendar-day-header">
-                                {day}
-                            </div>
-                        ))}
-                        
-                        {schedule.map((day) => {
-                            const dayOfWeek = new Date(2026, 5, day.date).getDay();
-                            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                            const isToday = day.date === currentDate;
-                            
-                            let cellClass = 'calendar-cell ';
-                            cellClass += day.worker === 'A' ? 'worker-a ' : 'worker-b ';
-                            if (day.isHandover) cellClass += 'handover-day ';
-                            if (isToday) cellClass += 'today ';
-                            if (day.isHoliday) cellClass += 'holiday ';
-                            
-                            return (
-                                <div key={day.date} className={cellClass}>
-                                    <div className="date-number flex" style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                                        <span>{day.date}</span>
-                                        {isToday && <span style={{fontSize: '10px'}}>📍</span>}
-                                    </div>
-                                    {day.isHoliday && (
-                                        <div className="holiday-badge">
-                                            {day.holidayName}
-                                        </div>
-                                    )}
-                                    {day.isHandover && (
-                                        <div className="handover-badge">
-                                            🔄 {day.handoverTime}
-                                        </div>
-                                    )}
-                                    <div className="worker-badge">
-                                        {day.worker === 'A' ? '👤 A' : '👤 B'}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    
-                    <div className="mt-4" style={{fontSize: '12px', color: '#6b7280', display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-                        <span>🔄 = 교대일</span>
-                        <span>⭐ = 공휴일</span>
-                        <span>🟡 테두리 = 교대</span>
-                        <span>🟢 테두리 = 오늘</span>
-                    </div>
-                </div>
-            );
-        }
+// ── 날짜 편집 모달 ──
+function DayModal({ dateKey, existing, onSave, onDelete, onClose }) {
+  const [worker, setWorker] = useState(existing?.worker || '효중');
+  const [isHandover, setIsHandover] = useState(existing?.is_handover || false);
+  const [handoverTime, setHandoverTime] = useState(existing?.handover_time || '1항차 (07:30)');
+  const [isHoliday, setIsHoliday] = useState(existing?.is_holiday || false);
+  const [holidayName, setHolidayName] = useState(existing?.holiday_name || HOLIDAYS[dateKey] || '');
 
-        // 교대 알림 카드
-        function HandoverAlert({ schedule, currentUser }) {
-            const currentDate = 10;
-            const tomorrowSchedule = schedule.find(day => day.date === currentDate + 1);
-            const todaySchedule = schedule.find(day => day.date === currentDate);
-            
-            const isTomorrowHandover = tomorrowSchedule?.isHandover && 
-                (todaySchedule?.worker === currentUser || tomorrowSchedule?.worker === currentUser);
-            
-            if (!isTomorrowHandover) return null;
-            
-            const handoverDirection = todaySchedule?.worker === currentUser ? 
-                `${currentUser} → ${currentUser === 'A' ? 'B' : 'A'}` : 
-                `${currentUser === 'A' ? 'B' : 'A'} → ${currentUser}`;
-            
-            return (
-                <div className="alert-card">
-                    <div className="flex" style={{alignItems: 'flex-start', gap: '16px'}}>
-                        <div className="alert-icon">⚠️</div>
-                        <div style={{flex: 1}}>
-                            <h3 className="alert-title">내일 교대일입니다!</h3>
-                            <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                                <p className="font-semibold">📅 날짜: 6월 {tomorrowSchedule.date}일</p>
-                                <p className="font-semibold">🚢 배편: {tomorrowSchedule.handoverTime} (07:30 출발)</p>
-                                <p className="font-semibold">🔄 교대: {handoverDirection}</p>
-                                <p style={{fontSize: '14px', marginTop: '8px'}}>⏰ 출발 시간 확인 필수!</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
+  const [y,m,d] = dateKey.split('-');
+  const label = `${parseInt(m)}월 ${parseInt(d)}일 (${DOW[new Date(dateKey).getDay()]})`;
 
-        // 기상 정보 컴포넌트
-        function WeatherWidget() {
-            return (
-                <div className="weather-card">
-                    <h3 className="weather-title">🌊 강화 서도 기상 정보</h3>
-                    <iframe
-                        src="https://embed.windy.com/embed2.html?lat=37.7&lon=126.3&detailLat=37.7&detailLon=126.3&width=650&height=450&zoom=10&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
-                        className="weather-iframe"
-                    ></iframe>
-                    <div className="weather-stats">
-                        <div className="weather-stat temp">
-                            <div className="weather-stat-label">기온</div>
-                            <div className="weather-stat-value temp">23°C</div>
-                        </div>
-                        <div className="weather-stat wind">
-                            <div className="weather-stat-label">풍속</div>
-                            <div className="weather-stat-value wind">3m/s</div>
-                        </div>
-                        <div className="weather-stat wave">
-                            <div className="weather-stat-label">파고</div>
-                            <div className="weather-stat-value wave">0.5m</div>
-                        </div>
-                    </div>
-                    <div className="weather-status">
-                        <p className="weather-status-text">✅ 배편 운항 가능 (양호한 기상 상태)</p>
-                    </div>
-                </div>
-            );
-        }
+  return (
+    <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal">
+        <h3 className="modal-title">📅 {label} 설정</h3>
 
-        // 희망일 입력 컴포넌트
-        function WishDateForm({ currentUser }) {
-            const [selectedDates, setSelectedDates] = useState([]);
-            
-            const toggleDate = (date) => {
-                if (selectedDates.includes(date)) {
-                    setSelectedDates(selectedDates.filter(d => d !== date));
-                } else {
-                    setSelectedDates([...selectedDates, date].sort((a, b) => a - b));
-                }
-            };
-            
-            const handleSubmit = () => {
-                alert(`${USERS[currentUser].name} 희망일 제출 완료!\n\n선택한 날짜: ${selectedDates.join(', ')}일\n\n상대방이 입력을 완료하면 자동으로 스케줄이 생성됩니다.`);
-            };
-            
-            return (
-                <div className="wish-card">
-                    <h3 className="wish-title">💚 7월 희망 휴무일 입력</h3>
-                    <p className="wish-subtitle">원하는 휴무일을 선택하세요 (다중 선택 가능)</p>
-                    
-                    <div className="grid grid-cols-7 gap-2 mb-4">
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map(date => {
-                            const dayOfWeek = new Date(2026, 6, date).getDay();
-                            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                            const isSelected = selectedDates.includes(date);
-                            
-                            let btnClass = 'date-btn ';
-                            if (isSelected) btnClass += 'selected ';
-                            if (isWeekend && !isSelected) btnClass += 'weekend ';
-                            
-                            return (
-                                <button
-                                    key={date}
-                                    onClick={() => toggleDate(date)}
-                                    className={btnClass}
-                                >
-                                    <div className="date-day">
-                                        {['일','월','화','수','목','금','토'][dayOfWeek]}
-                                    </div>
-                                    <div className="date-number-btn">{date}</div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                    
-                    <div className="wish-summary">
-                        <p className="wish-summary-text">
-                            💚 선택한 날짜: {selectedDates.length > 0 ? selectedDates.join(', ') + '일' : '없음'}
-                        </p>
-                        {selectedDates.length > 1 && (
-                            <p className="wish-summary-detail">
-                                평균 주기: 약 {Math.round((selectedDates[selectedDates.length-1] - selectedDates[0]) / (selectedDates.length - 1))}일
-                            </p>
-                        )}
-                    </div>
-                    
-                    <button 
-                        onClick={handleSubmit} 
-                        className="btn-primary"
-                        disabled={selectedDates.length === 0}
-                    >
-                        {selectedDates.length === 0 ? '날짜를 선택하세요' : '제출하기'}
-                    </button>
-                </div>
-            );
-        }
+        <div className="modal-field">
+          <label>근무자</label>
+          <div className="seg-btns">
+            <button className={`seg-btn ${worker==='효중'?'active-hj':''}`} onClick={()=>setWorker('효중')}>👨 효중</button>
+            <button className={`seg-btn ${worker==='민수'?'active-ms':''}`} onClick={()=>setWorker('민수')}>👨‍💼 민수</button>
+          </div>
+        </div>
 
-        // 공정성 리포트 컴포넌트
-        function FairnessReport({ schedule }) {
-            const aWorkDays = schedule.filter(d => d.worker === 'A').length;
-            const bWorkDays = schedule.filter(d => d.worker === 'B').length;
-            const aWeekends = schedule.filter(d => d.worker === 'A' && d.isWeekend).length;
-            const bWeekends = schedule.filter(d => d.worker === 'B' && d.isWeekend).length;
-            
-            const daysDiff = Math.abs(aWorkDays - bWorkDays);
-            const weekendDiff = Math.abs(aWeekends - bWeekends);
-            
-            const daysScore = Math.max(0, (3 - daysDiff) / 3 * 40);
-            const weekendScore = Math.max(0, (2 - weekendDiff) / 2 * 30);
-            const baseScore = 30;
-            
-            const fairnessScore = Math.round(daysScore + weekendScore + baseScore);
-            
-            return (
-                <div className="fairness-card">
-                    <h3 className="fairness-title">⚖️ 공정성 리포트 (6월)</h3>
-                    
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                        <div className="fairness-section">
-                            <div className="fairness-header">
-                                <span className="fairness-label">📈 근무일수 균형</span>
-                                <span className={`fairness-status ${daysDiff <= 3 ? 'good' : 'bad'}`}>
-                                    {daysDiff <= 3 ? '✅ 균형' : '❌ 불균형'}
-                                </span>
-                            </div>
-                            <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                                <div className="progress-bar-container">
-                                    <span className="progress-label">A:</span>
-                                    <div className="progress-bar-bg">
-                                        <div className="progress-bar-fill purple"
-                                             style={{ width: `${(aWorkDays / 30) * 100}%` }}>
-                                            {aWorkDays}일
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="progress-bar-container">
-                                    <span className="progress-label">B:</span>
-                                    <div className="progress-bar-bg">
-                                        <div className="progress-bar-fill pink"
-                                             style={{ width: `${(bWorkDays / 30) * 100}%` }}>
-                                            {bWorkDays}일
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <p className="fairness-note">차이: {daysDiff}일 (목표: 3일 이내)</p>
-                        </div>
-                        
-                        <div className="fairness-section">
-                            <div className="fairness-header">
-                                <span className="fairness-label">🌅 주말 근무 비율</span>
-                                <span className={`fairness-status ${weekendDiff <= 2 ? 'good' : 'warning'}`}>
-                                    {weekendDiff <= 2 ? '✅ 균형' : '⚠️ 주의'}
-                                </span>
-                            </div>
-                            <div className="fairness-grid">
-                                <div className="fairness-box purple">
-                                    <div className="fairness-box-label">A</div>
-                                    <div className="fairness-box-value purple">{aWeekends}일</div>
-                                </div>
-                                <div className="fairness-box pink">
-                                    <div className="fairness-box-label">B</div>
-                                    <div className="fairness-box-value pink">{bWeekends}일</div>
-                                </div>
-                            </div>
-                            <p className="fairness-note">차이: {weekendDiff}일 (목표: 2일 이내)</p>
-                        </div>
-                        
-                        <div className="fairness-section">
-                            <div className="fairness-header">
-                                <span className="fairness-label">🎯 종합 공정성 점수</span>
-                            </div>
-                            <div className="fairness-score-container">
-                                <div className="fairness-score-header">
-                                    <span className="fairness-score-number">{fairnessScore}/100</span>
-                                    <span className="fairness-score-icon">
-                                        {fairnessScore >= 90 ? '🏆' : fairnessScore >= 70 ? '👍' : '⚠️'}
-                                    </span>
-                                </div>
-                                <div className="fairness-score-bar">
-                                    <div className={`fairness-score-fill ${
-                                        fairnessScore >= 90 ? 'excellent' : fairnessScore >= 70 ? 'good' : 'poor'
-                                    }`} style={{ width: `${fairnessScore}%` }}>
-                                    </div>
-                                </div>
-                                <p className="fairness-score-description">
-                                    {fairnessScore >= 90 ? '✅ 매우 공정한 스케줄' : 
-                                     fairnessScore >= 70 ? '👍 양호한 수준' : 
-                                     '⚠️ 다음 달 조정 필요'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
+        <div className="modal-field">
+          <label>교대일 여부</label>
+          <div className="seg-btns">
+            <button className={`seg-btn ${isHandover?'active-yes':''}`} onClick={()=>setIsHandover(true)}>🔄 교대</button>
+            <button className={`seg-btn ${!isHandover?'active-no':''}`} onClick={()=>setIsHandover(false)}>근무</button>
+          </div>
+        </div>
 
-        // 메인 대시보드
-        function Dashboard({ currentUser, onLogout }) {
-            const schedule = SAMPLE_SCHEDULE['2026-06'];
-            const [activeTab, setActiveTab] = useState('calendar');
-            
-            return (
-                <div style={{minHeight: '100vh', background: '#f5f7fa'}}>
-                    <div className="header">
-                        <div className="container flex" style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                            <div>
-                                <h1 className="header-title">🏝️ 섬 교대 근무 관리</h1>
-                                <p className="header-subtitle">{USERS[currentUser].name}</p>
-                            </div>
-                            <button onClick={onLogout} className="logout-btn">
-                                로그아웃
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div className="container">
-                        <StatsCard currentUser={currentUser} schedule={schedule} />
-                        <HandoverAlert schedule={schedule} currentUser={currentUser} />
-                        
-                        <div className="flex gap-2 mb-6 overflow-x-auto">
-                            <button
-                                onClick={() => setActiveTab('calendar')}
-                                className={`tab-btn ${activeTab === 'calendar' ? 'active' : 'inactive'}`}
-                            >
-                                📅 스케줄
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('wish')}
-                                className={`tab-btn ${activeTab === 'wish' ? 'active' : 'inactive'}`}
-                            >
-                                💚 희망일 입력
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('fairness')}
-                                className={`tab-btn ${activeTab === 'fairness' ? 'active' : 'inactive'}`}
-                            >
-                                ⚖️ 공정성
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('weather')}
-                                className={`tab-btn ${activeTab === 'weather' ? 'active' : 'inactive'}`}
-                            >
-                                🌊 기상정보
-                            </button>
-                        </div>
-                        
-                        {activeTab === 'calendar' && <Calendar schedule={schedule} currentUser={currentUser} />}
-                        {activeTab === 'wish' && <WishDateForm currentUser={currentUser} />}
-                        {activeTab === 'fairness' && <FairnessReport schedule={schedule} />}
-                        {activeTab === 'weather' && <WeatherWidget />}
-                    </div>
-                    
-                    <div className="footer">
-                        <p>섬 교대 근무 관리 시스템 v1.2</p>
-                        <p className="footer-version">Tailwind 제거, 순수 CSS 적용 (프로덕션 최적화)</p>
-                    </div>
-                </div>
-            );
-        }
+        {isHandover && (
+          <div className="modal-field">
+            <label>항차</label>
+            <select className="modal-select" value={handoverTime} onChange={e=>setHandoverTime(e.target.value)}>
+              {FERRY.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+        )}
 
-        // 메인 앱
-        function App() {
-            const [loggedInUser, setLoggedInUser] = useState(null);
+        <div className="modal-field">
+          <label>공휴일</label>
+          <div className="seg-btns">
+            <button className={`seg-btn ${isHoliday?'active-yes':''}`} onClick={()=>setIsHoliday(true)}>⭐ 공휴일</button>
+            <button className={`seg-btn ${!isHoliday?'active-no':''}`} onClick={()=>setIsHoliday(false)}>일반</button>
+          </div>
+        </div>
 
-            return (
-                <div>
-                    {!loggedInUser ? (
-                        <LoginScreen onLogin={setLoggedInUser} />
-                    ) : (
-                        <Dashboard currentUser={loggedInUser} onLogout={() => setLoggedInUser(null)} />
-                    )}
-                </div>
-            );
-        }
+        {isHoliday && (
+          <div className="modal-field">
+            <label>공휴일 이름</label>
+            <input className="modal-input" value={holidayName} onChange={e=>setHolidayName(e.target.value)} placeholder="예: 현충일" />
+          </div>
+        )}
 
-        ReactDOM.render(<App />, document.getElementById('root'));
-    </script>
+        <div className="modal-btns">
+          <button className="modal-cancel" onClick={onClose}>취소</button>
+          <button className="modal-save" onClick={()=>onSave({ worker, is_handover:isHandover, handover_time:isHandover?handoverTime:null, is_holiday:isHoliday, holiday_name:isHoliday?holidayName:null })}>저장</button>
+        </div>
+        {existing && <button className="modal-delete" onClick={()=>onDelete()}>🗑️ 이 날 데이터 삭제</button>}
+      </div>
+    </div>
+  );
+}
+
+// ── 캘린더 ──
+function CalendarView({ scheduleMap, currentUser, year, month, onCellClick }) {
+  const todayKey = today();
+  const firstDow = new Date(year, month, 1).getDay();
+  const totalDays = daysInMonth(year, month);
+  const cells = [];
+
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  return (
+    <div className="cal-card">
+      <div className="cal-nav" style={{flexWrap:'wrap',gap:8}}>
+        <div className="cal-title">{year}년 {month+1}월</div>
+        <div className="cal-legend">
+          <span className="legend-chip legend-hj">👨 효중</span>
+          <span className="legend-chip legend-ms">👨‍💼 민수</span>
+          <span className="legend-chip legend-today-chip">📍 오늘</span>
+        </div>
+      </div>
+
+      <div className="cal-grid">
+        {DOW.map((d,i) => (
+          <div key={d} className={`cal-dow ${i===0?'sun':i===6?'sat':''}`}>{d}</div>
+        ))}
+        {cells.map((d,i) => {
+          if (!d) return <div key={`e${i}`} className="cal-cell empty" />;
+          const key = toKey(year, month, d);
+          const sc = scheduleMap[key];
+          const isToday = key === todayKey;
+          const dow = new Date(year, month, d).getDay();
+          const isSun = dow === 0, isSat = dow === 6;
+
+          let cls = 'cal-cell ';
+          if (!sc) cls += 'unset';
+          else if (sc.worker === '효중') cls += 'hj';
+          else cls += 'ms';
+          if (isToday) cls += ' is-today';
+          if (sc?.is_handover) cls += ' is-handover';
+
+          return (
+            <div key={key} className={cls} onClick={() => onCellClick(key, sc)}>
+              <div className="cell-date">
+                <span style={{color: sc ? '#fff' : isSun ? '#ef4444' : isSat ? '#93c5fd' : ''}}>{d}</span>
+                {isToday && <span style={{fontSize:10}}>📍</span>}
+              </div>
+              {sc?.is_holiday && <div className="cell-holiday">{sc.holiday_name || '공휴일'}</div>}
+              {sc?.is_handover && <div className="cell-handover">🔄 {sc.handover_time?.split(' ')[0]}</div>}
+              {sc && <div className="cell-worker">{sc.worker === '효중' ? '👨 효중' : '👨‍💼 민수'}</div>}
+              {!sc && <div className="cell-edit-hint">탭하여 입력</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{marginTop:12,display:'flex',gap:12,fontSize:12,color:'#9ca3af',flexWrap:'wrap'}}>
+        <span>🟡 테두리 = 교대일</span>
+        <span>🟢 테두리 = 오늘</span>
+        <span>탭하면 입력/수정</span>
+      </div>
+    </div>
+  );
+}
+
+// ── 통계 카드 ──
+function StatsCards({ scheduleMap, currentUser, year, month }) {
+  const keys = Object.keys(scheduleMap).filter(k => k.startsWith(`${year}-${String(month+1).padStart(2,'0')}`));
+  const myDays = keys.filter(k => scheduleMap[k].worker === currentUser).length;
+  const restDays = daysInMonth(year, month) - myDays;
+  const nextHandover = Object.entries(scheduleMap)
+    .filter(([k,v]) => k >= today() && v.is_handover)
+    .sort(([a],[b]) => a.localeCompare(b))[0];
+
+  const [y,m,d] = nextHandover ? nextHandover[0].split('-') : [];
+  const nextLabel = nextHandover ? `${parseInt(m)}/${parseInt(d)} ${nextHandover[1].handover_time?.split(' ')[0]}` : '-';
+
+  return (
+    <div className="stats-grid">
+      <div className="stat-card">
+        <div className="stat-label">근무일수 ({month+1}월)</div>
+        <div className="stat-val c-purple">{myDays}일</div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-label">실근무시간</div>
+        <div className="stat-val c-blue">{myDays*24}시간</div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-label">휴식일수</div>
+        <div className="stat-val c-green">{restDays}일</div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-label">다음 교대</div>
+        <div className="stat-val c-orange" style={{fontSize:16}}>{nextLabel}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── 교대 알림 ──
+function HandoverAlert({ scheduleMap, currentUser }) {
+  const todayKey = today();
+  const [ty, tm, td] = todayKey.split('-').map(Number);
+  const tomorrowKey = toKey(ty, tm-1, td+1);
+  const tmSc = scheduleMap[tomorrowKey];
+  const todSc = scheduleMap[todayKey];
+
+  if (!tmSc?.is_handover) return null;
+  const isMyTurn = todSc?.worker === currentUser || tmSc?.worker === currentUser;
+  if (!isMyTurn) return null;
+
+  const [,m,d] = tomorrowKey.split('-');
+  return (
+    <div className="alert-card">
+      <div className="alert-icon">⚠️</div>
+      <div>
+        <div className="alert-title">내일 교대일입니다!</div>
+        <div className="alert-info">
+          📅 {parseInt(m)}월 {parseInt(d)}일<br/>
+          🚢 {tmSc.handover_time}<br/>
+          🔄 {todSc?.worker} → {tmSc.worker}<br/>
+          ⏰ 출발 시간 꼭 확인!
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 공정성 ──
+function FairnessReport({ scheduleMap }) {
+  const all = Object.values(scheduleMap);
+  const hjDays = all.filter(s=>s.worker==='효중').length;
+  const msDays = all.filter(s=>s.worker==='민수').length;
+  const total = hjDays + msDays || 1;
+
+  const hjWknd = all.filter(s=>{ const dow=new Date(Object.keys(scheduleMap).find(k=>scheduleMap[k]===s)).getDay(); return s.worker==='효중'&&(dow===0||dow===6); }).length;
+  const msWknd = all.filter(s=>{ const dow=new Date(Object.keys(scheduleMap).find(k=>scheduleMap[k]===s)).getDay(); return s.worker==='민수'&&(dow===0||dow===6); }).length;
+
+  const diff = Math.abs(hjDays-msDays);
+  const wDiff = Math.abs(hjWknd-msWknd);
+  const dScore = Math.max(0,(3-diff)/3*40);
+  const wScore = Math.max(0,(2-wDiff)/2*30);
+  const score = Math.round(dScore+wScore+30);
+
+  return (
+    <div className="fair-card">
+      <div className="fair-title">⚖️ 누적 공정성 리포트</div>
+
+      <div className="fair-row">
+        <div className="fair-row-header">
+          <span className="fair-row-label">📈 근무일수 균형</span>
+          <span className={diff<=3?'fair-ok':'fair-warn'}>{diff<=3?'✅ 균형':'⚠️ 조정필요'}</span>
+        </div>
+        {[['효중',hjDays,'bar-hj'],['민수',msDays,'bar-ms']].map(([n,v,cls])=>(
+          <div key={n} className="bar-wrap">
+            <span className="bar-name">{n}</span>
+            <div className="bar-bg">
+              <div className={`bar-fill ${cls}`} style={{width:`${(v/Math.max(hjDays,msDays,1))*100}%`}}>{v}일</div>
+            </div>
+          </div>
+        ))}
+        <p className="fair-note">차이 {diff}일 (목표: 3일 이내)</p>
+      </div>
+
+      <div className="fair-row">
+        <div className="fair-row-header">
+          <span className="fair-row-label">🌅 주말 근무</span>
+          <span className={wDiff<=2?'fair-ok':'fair-warn'}>{wDiff<=2?'✅ 균형':'⚠️ 주의'}</span>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+          {[['효중',hjWknd,'#ede9fe','#6d28d9'],['민수',msWknd,'#fce7f3','#be185d']].map(([n,v,bg,c])=>(
+            <div key={n} style={{background:bg,borderRadius:8,padding:'10px',textAlign:'center'}}>
+              <div style={{fontSize:12,color:'#6b7280'}}>{n}</div>
+              <div style={{fontSize:22,fontWeight:700,color:c}}>{v}일</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="fair-row">
+        <div className="fair-row-header">
+          <span className="fair-row-label">🎯 종합 공정성 점수</span>
+        </div>
+        <div className="score-wrap">
+          <span className="score-num">{score}/100</span>
+          <span style={{fontSize:28}}>{score>=90?'🏆':score>=70?'👍':'⚠️'}</span>
+        </div>
+        <div className="score-bar-bg">
+          <div className={`score-bar-fill ${score>=90?'score-excellent':score>=70?'score-good':'score-poor'}`} style={{width:`${score}%`}} />
+        </div>
+        <p className="score-desc">{score>=90?'✅ 매우 공정':score>=70?'👍 양호':' ⚠️ 다음 달 조정 필요'}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── 희망일 ──
+function WishForm({ currentUser }) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+2 > 12 ? 1 : now.getMonth()+2;
+  const days = daysInMonth(y, m-1);
+  const [selected, setSelected] = useState([]);
+
+  const toggle = d => setSelected(s => s.includes(d) ? s.filter(x=>x!==d) : [...s,d].sort((a,b)=>a-b));
+
+  return (
+    <div className="wish-card">
+      <h3 className="wish-title">💚 {m}월 희망 휴무일 입력</h3>
+      <p className="wish-sub">원하는 휴무일을 선택하세요 (다중 선택 가능)</p>
+      <div className="wish-grid">
+        {Array.from({length:days},(_,i)=>i+1).map(d=>{
+          const dow = new Date(y,m-1,d).getDay();
+          const isWknd = dow===0||dow===6;
+          return (
+            <button key={d} onClick={()=>toggle(d)}
+              className={`wish-day-btn ${isWknd?'weekend':''} ${selected.includes(d)?'selected':''}`}>
+              <div className="wish-day-label">{DOW[dow]}</div>
+              <div className="wish-day-num">{d}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="wish-summary">
+        <p className="wish-summary-text">💚 선택: {selected.length>0 ? selected.join(', ')+'일' : '없음'}</p>
+        {selected.length>1 && <p className="wish-summary-sub">평균 주기: 약 {Math.round((selected[selected.length-1]-selected[0])/(selected.length-1))}일</p>}
+      </div>
+      <button className="btn-primary" disabled={selected.length===0}
+        onClick={()=>alert(`${currentUser}님의 ${m}월 희망일 제출!\n${selected.join(', ')}일\n\n상대방 제출 후 자동 스케줄 생성됩니다.`)}>
+        {selected.length===0 ? '날짜를 선택하세요' : '제출하기'}
+      </button>
+    </div>
+  );
+}
+
+// ── 기상 ──
+function WeatherView() {
+  return (
+    <div className="weather-card">
+      <h3 className="weather-title">🌊 강화 서도 기상 정보</h3>
+      <iframe className="weather-iframe"
+        src="https://embed.windy.com/embed2.html?lat=37.7&lon=126.3&detailLat=37.7&detailLon=126.3&width=650&height=450&zoom=10&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+      />
+      <div className="weather-stats">
+        <div className="w-stat w-temp"><div className="w-stat-label">기온</div><div className="w-stat-val">23°C</div></div>
+        <div className="w-stat w-wind"><div className="w-stat-label">풍속</div><div className="w-stat-val">3m/s</div></div>
+        <div className="w-stat w-wave"><div className="w-stat-label">파고</div><div className="w-stat-val">0.5m</div></div>
+      </div>
+      <div className="weather-ok">✅ 배편 운항 가능 (양호한 기상 상태)</div>
+    </div>
+  );
+}
+
+// ── 메인 앱 ──
+function App() {
+  const [state, setState] = useState('loading'); // loading | login | changePin | dashboard
+  const [currentUser, setCurrentUser] = useState(null);
+  const [scheduleMap, setScheduleMap] = useState({});
+  const [tab, setTab] = useState('calendar');
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [modal, setModal] = useState(null); // { dateKey, existing }
+
+  // 초기 로드
+  useEffect(() => {
+    const init = async () => {
+      // 테이블 없으면 초기화
+      const { error } = await supabase.from('users').select('username').limit(1);
+      if (error) { setState('login'); return; }
+      setState('login');
+    };
+    init();
+  }, []);
+
+  // 스케줄 로드
+  const loadSchedule = useCallback(async () => {
+    const { data } = await supabase.from('schedule').select('*');
+    if (!data) return;
+    const map = {};
+    data.forEach(r => { map[r.date] = r; });
+    setScheduleMap(map);
+  }, []);
+
+  // 실시간 구독
+  useEffect(() => {
+    if (state !== 'dashboard') return;
+    loadSchedule();
+    const channel = supabase.channel('schedule-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule' }, () => loadSchedule())
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [state, loadSchedule]);
+
+  const handleLogin = (user, isFirst) => {
+    setCurrentUser(user);
+    if (isFirst) setState('changePin');
+    else setState('dashboard');
+  };
+
+  const handlePinChanged = () => setState('dashboard');
+
+  // 셀 클릭
+  const handleCellClick = (dateKey, existing) => {
+    setModal({ dateKey, existing });
+  };
+
+  // 저장
+  const handleSave = async (dateKey, data) => {
+    const existing = scheduleMap[dateKey];
+    if (existing) {
+      await supabase.from('schedule').update({ ...data, updated_at: new Date().toISOString() }).eq('date', dateKey);
+    } else {
+      await supabase.from('schedule').insert({ date: dateKey, ...data });
+    }
+    setModal(null);
+    loadSchedule();
+  };
+
+  // 삭제
+  const handleDelete = async (dateKey) => {
+    await supabase.from('schedule').delete().eq('date', dateKey);
+    setModal(null);
+    loadSchedule();
+  };
+
+  // 월 이동
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalYear(y=>y-1); setCalMonth(11); }
+    else setCalMonth(m=>m-1);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalYear(y=>y+1); setCalMonth(0); }
+    else setCalMonth(m=>m+1);
+  };
+
+  if (state === 'loading') return <LoadingScreen />;
+  if (state === 'login') return <LoginScreen onLogin={handleLogin} />;
+  if (state === 'changePin') return <ChangePinScreen username={currentUser} onDone={handlePinChanged} />;
+
+  return (
+    <div>
+      {/* 헤더 */}
+      <div className="header">
+        <div className="header-inner">
+          <div>
+            <div className="header-title">🏝️ 주문도 교대관리</div>
+            <div className="header-user">{currentUser}님</div>
+          </div>
+          <button className="logout-btn" onClick={()=>{ setCurrentUser(null); setState('login'); }}>로그아웃</button>
+        </div>
+      </div>
+
+      <div className="main">
+        {/* 통계 */}
+        <StatsCards scheduleMap={scheduleMap} currentUser={currentUser} year={calYear} month={calMonth} />
+
+        {/* 교대 알림 */}
+        <HandoverAlert scheduleMap={scheduleMap} currentUser={currentUser} />
+
+        {/* 탭 */}
+        <div className="tabs">
+          {[['calendar','📅 스케줄'],['wish','💚 희망일'],['fairness','⚖️ 공정성'],['weather','🌊 기상']].map(([k,l])=>(
+            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
+          ))}
+        </div>
+
+        {/* 캘린더 탭 */}
+        {tab === 'calendar' && (
+          <>
+            {/* 월 네비게이션 */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginBottom:12}}>
+              <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
+              <span style={{fontSize:16,fontWeight:700,color:'#1f2937',minWidth:80,textAlign:'center'}}>{calYear}년 {calMonth+1}월</span>
+              <button className="cal-nav-btn" onClick={nextMonth}>›</button>
+            </div>
+            <CalendarView
+              scheduleMap={scheduleMap}
+              currentUser={currentUser}
+              year={calYear}
+              month={calMonth}
+              onCellClick={handleCellClick}
+            />
+          </>
+        )}
+
+        {tab === 'wish' && <WishForm currentUser={currentUser} />}
+        {tab === 'fairness' && <FairnessReport scheduleMap={scheduleMap} />}
+        {tab === 'weather' && <WeatherView />}
+      </div>
+
+      {/* 날짜 편집 모달 */}
+      {modal && (
+        <DayModal
+          dateKey={modal.dateKey}
+          existing={modal.existing}
+          onSave={data => handleSave(modal.dateKey, data)}
+          onDelete={() => handleDelete(modal.dateKey)}
+          onClose={() => setModal(null)}
+        />
+      )}
+
+      <div style={{textAlign:'center',padding:'24px 0',color:'#9ca3af',fontSize:12}}>
+        주문도 교대관리 v2.0 · Supabase 실시간 동기화
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
 </body>
 </html>
