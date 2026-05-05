@@ -135,7 +135,7 @@
     .seg-btn.active-handover { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
     .seg-btn.active-work     { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
     .seg-btn.active-holiday  { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
-    .seg-btn.active-no       { border-color: #d1d5db; background: #f9fafb; color: #6b7280; }
+    .seg-btn.active-no       { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }
     .modal-select { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
     .modal-select:focus { border-color: #7c3aed; }
     .modal-input { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; }
@@ -475,7 +475,7 @@ function CalendarView({ scheduleMap, currentUser, year, month, onCellClick }) {
 // 항차별 섬 도착 기준 분 수
 const FERRY_MINS = { '1항차': 505, '2항차': 835, '3항차': 1045 };
 const arrivalMins = ht => FERRY_MINS[ht?.split(' ')[0]] ?? 505;
-const fmtMins = m => { const h = Math.floor(m/60), r = m%60; return r > 0 ? `${h}시간 ${r}분` : `${h}시간`; };
+const fmtMins = m => { const h = Math.floor(m/60), r = m%60; return r > 0 ? `${h}시간 ${String(r).padStart(2,'0')}분` : `${h}시간`; };
 
 function StatsCards({ scheduleMap, year, month }) {
   const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
@@ -696,18 +696,15 @@ function FairnessIndicator({ scheduleMap }) {
   const hjDays = all.filter(([,v]) => v.worker === '효중').length;
   const msDays = all.filter(([,v]) => v.worker === '민수').length;
 
-  const hjDiff = hjDays - HJ_BASE;
-  const msDiff = msDays - MS_BASE;
-
-  const diffColor = d => d > 0 ? '#fdba74' : d < 0 ? '#93c5fd' : '#6ee7b7';
-  const diffText  = d => d > 0 ? `+${d}일` : d < 0 ? `${d}일` : '±0';
+  const hjColor = hjDays >= HJ_BASE ? '#6ee7b7' : '#fdba74';
+  const msColor = msDays >= MS_BASE ? '#6ee7b7' : '#fdba74';
 
   return (
     <div className="fair-badge">
       <span>⚖️</span>
-      <span className="fair-badge-item" style={{color: diffColor(hjDiff)}}>효중 {diffText(hjDiff)}</span>
+      <span className="fair-badge-item" style={{color: hjColor}}>효중 {hjDays}/{HJ_BASE}일</span>
       <span className="fair-badge-sep">|</span>
-      <span className="fair-badge-item" style={{color: diffColor(msDiff)}}>민수 {diffText(msDiff)}</span>
+      <span className="fair-badge-item" style={{color: msColor}}>민수 {msDays}/{MS_BASE}일</span>
     </div>
   );
 }
