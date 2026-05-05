@@ -873,17 +873,14 @@ function App() {
     setFilling(true);
     const { dateKey, formData, forwardKeys, backwardKeys, otherWorker } = confirmModal;
     await saveSingleDay(dateKey, formData);
-    const makeEntries = (keys, worker) => keys.map(k => {
+    const makeData = (k, w) => {
       const hn = getHolidayName(k);
-      return { date: k, worker, is_handover: false, handover_time: null, is_holiday: !!hn, holiday_name: hn || null };
-    });
-    const allEntries = [
-      ...makeEntries(forwardKeys, formData.worker),
-      ...makeEntries(backwardKeys, otherWorker),
-    ];
-    if (allEntries.length > 0) {
-      await supabase.from('schedule').upsert(allEntries, { onConflict: 'date' });
-    }
+      return { worker: w, is_handover: false, handover_time: null, is_holiday: !!hn, holiday_name: hn || null };
+    };
+    await Promise.all([
+      ...forwardKeys.map(k => saveSingleDay(k, makeData(k, formData.worker))),
+      ...backwardKeys.map(k => saveSingleDay(k, makeData(k, otherWorker))),
+    ]);
     setModal(null); setConfirmModal(null); setFilling(false);
     loadSchedule();
   };
