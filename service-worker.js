@@ -1,4 +1,4 @@
-const CACHE = 'jumun-shift-v2';
+const CACHE = 'jumun-shift-v3';
 const ASSETS = [
   './',
   './index.html',
