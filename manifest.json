@@ -2,7 +2,7 @@
   "name": "주문도 교대관리",
   "short_name": "교대관리",
   "description": "주문도 교대근무 스케줄 관리",
-  "start_url": "/jumun-shift-manager/",
+  "start_url": "/jumun-shift-manager/index.html",
   "scope": "/jumun-shift-manager/",
   "display": "standalone",
   "background_color": "#f5f7fa",
