@@ -246,12 +246,24 @@
     .checklist-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f3f4f6; }
     .checklist-item:last-child { border-bottom: none; }
     .checklist-item input[type=checkbox] { width:18px; height:18px; cursor:pointer; accent-color:#7c3aed; flex-shrink:0; }
+
+    /* ── 새로고침 버튼 ── */
+    @keyframes spin-once { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    .refresh-btn { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4); color:#fff; width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0; transition:background .2s; line-height:1; }
+    .refresh-btn:hover { background:rgba(255,255,255,.35); }
+    .refresh-btn.spinning { animation:spin-once .6s linear; }
+    .refresh-btn-login { position:fixed; top:16px; right:16px; width:40px; height:40px; background:rgba(255,255,255,.25); border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:10px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:50; padding:0; line-height:1; transition:background .2s; }
+    .refresh-btn-login:hover { background:rgba(255,255,255,.4); }
+    .refresh-btn-login.spinning { animation:spin-once .6s linear; }
   </style>
 </head>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./service-worker.js', { scope: '/jumun-shift-manager/' }).catch(() => {});
+    });
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'SW_UPDATED') window.location.reload();
     });
   }
 </script>
@@ -302,6 +314,8 @@ function LoginScreen({ onLogin }) {
   const [user, setUser] = useState('효중');
   const [pin, setPin] = useState(['','','','']);
   const [err, setErr] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const doRefresh = () => { setRefreshing(true); setTimeout(() => window.location.reload(), 400); };
 
   const handlePin = (i, v) => {
     if (v.length > 1) return;
@@ -321,6 +335,7 @@ function LoginScreen({ onLogin }) {
 
   return (
     <div className="login-wrap">
+      <button className={`refresh-btn-login ${refreshing ? 'spinning' : ''}`} onClick={doRefresh} title="새로고침">↻</button>
       <div className="login-card">
         <div className="login-icon">🏝️</div>
         <h1 className="login-title">주문도 교대관리</h1>
@@ -1094,6 +1109,7 @@ function App() {
   const [modal, setModal] = useState(null); // { dateKey, existing }
   const [confirmModal, setConfirmModal] = useState(null); // { dateKey, formData, forwardKeys, backwardKeys, otherWorker }
   const [filling, setFilling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 초기 로드
   useEffect(() => {
@@ -1115,14 +1131,23 @@ function App() {
     setScheduleMap(map);
   }, []);
 
-  // 실시간 구독
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadSchedule();
+    setTimeout(() => setRefreshing(false), 600);
+  }, [loadSchedule]);
+
+  // 실시간 구독 + 30초 폴링 fallback
   useEffect(() => {
     if (state !== 'dashboard') return;
     loadSchedule();
     const channel = supabase.channel('schedule-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule' }, () => loadSchedule())
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+      .subscribe(status => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') loadSchedule();
+      });
+    const poll = setInterval(() => loadSchedule(), 30000);
+    return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [state, loadSchedule]);
 
   const handleLogin = (user, isFirst, isAdm) => {
@@ -1257,6 +1282,7 @@ function App() {
           </div>
           <div className="header-right">
             <FairnessIndicator scheduleMap={scheduleMap} />
+            <button className={`refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh} title="새로고침">↻</button>
             <button className="logout-btn" onClick={()=>{ setCurrentUser(null); setState('login'); }}>로그아웃</button>
           </div>
         </div>
