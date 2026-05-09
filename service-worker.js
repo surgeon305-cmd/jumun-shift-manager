@@ -1,4 +1,4 @@
-const CACHE = 'jumun-shift-v4';
+const CACHE = 'jumun-shift-v5';
 const STATIC_ASSETS = [
   './icon-192.png',
   './icon-512.png',

@@ -277,6 +277,35 @@ const { useState, useEffect, useCallback } = React;
 const SUPA_URL = 'https://qwudsfmedjunkuqkgrpv.supabase.co';
 const SUPA_KEY = 'sb_publishable_zB6omtQKHnMLVvWDd91LOg_CzbJKlya';
 const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+const APP_VERSION = 'jumun-analytics-v1';
+
+function getAnalyticsId() {
+  const key = 'jumun_analytics_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : `anon-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+const ANALYTICS_ID = getAnalyticsId();
+const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+function trackEvent(eventName, metadata = {}, userLabel = null) {
+  supabase.from('analytics_events').insert({
+    event_name: eventName,
+    project: 'jumun-shift-manager',
+    user_label: userLabel,
+    anonymous_id: ANALYTICS_ID,
+    session_id: SESSION_ID,
+    page_path: location.pathname,
+    metadata,
+    app_version: APP_VERSION,
+  }).then(({ error }) => {
+    if (error) console.debug('analytics skipped:', error.message);
+  }).catch(() => {});
+}
 
 // ── 상수 ──
 const USERS = { '효중': '효중', '민수': '민수' };
@@ -328,8 +357,9 @@ function LoginScreen({ onLogin }) {
     const entered = p.join('');
     // select('*') 사용 — is_admin 컬럼 없어도 에러 없이 동작
     const { data, error } = await supabase.from('users').select('*').eq('username', user).single();
-    if (error || !data) { setErr('사용자 정보 없음'); setPin(['','','','']); return; }
-    if (data.pin !== entered) { setErr('PIN이 틀렸습니다'); setPin(['','','','']); document.getElementById('p0')?.focus(); return; }
+    if (error || !data) { trackEvent('login_fail', { reason: 'missing_user' }, user); setErr('사용자 정보 없음'); setPin(['','','','']); return; }
+    if (data.pin !== entered) { trackEvent('login_fail', { reason: 'wrong_pin' }, user); setErr('PIN이 틀렸습니다'); setPin(['','','','']); document.getElementById('p0')?.focus(); return; }
+    trackEvent('login_success', { is_first_login: !!data.is_first_login, is_admin: !!data.is_admin }, user);
     onLogin(user, data.is_first_login, data.is_admin || false);
   };
 
@@ -378,6 +408,7 @@ function ChangePinScreen({ username, onDone }) {
     if (n1 === '0000') { setErr('0000은 사용할 수 없습니다'); return; }
     setLoading(true);
     await supabase.from('users').update({ pin: n1, is_first_login: false }).eq('username', username);
+    trackEvent('pin_change_success', {}, username);
     setLoading(false);
     onDone();
   };
@@ -826,6 +857,7 @@ function WishCalendar({ currentUser }) {
   const toggleWish = async (dateKey) => {
     if (!tableReady) return;
     const newSet = new Set(wishDates);
+    const selected = !newSet.has(dateKey);
     if (newSet.has(dateKey)) {
       newSet.delete(dateKey);
       await supabase.from('wish_dates').delete().eq('username', currentUser).eq('date', dateKey);
@@ -833,6 +865,7 @@ function WishCalendar({ currentUser }) {
       newSet.add(dateKey);
       await supabase.from('wish_dates').insert({ username: currentUser, date: dateKey });
     }
+    trackEvent('wish_toggle', { date: dateKey, selected }, currentUser);
     setWishDates(newSet);
   };
 
@@ -935,6 +968,7 @@ function StatsTab({ scheduleMap, currentUser }) {
     } else {
       await supabase.from('weekend_checks').insert({ username: currentUser, date: dateKey, checked: newVal });
     }
+    trackEvent('weekend_check_toggle', { date: dateKey, checked: newVal }, currentUser);
   };
 
   // 근무일 + 1개월 = 마감일, 오늘부터 마감일까지 남은 일수 (음수면 기한초과)
@@ -1111,6 +1145,12 @@ function App() {
   const [filling, setFilling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    trackEvent('app_open', {
+      standalone: window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
+    });
+  }, []);
+
   // 초기 로드
   useEffect(() => {
     const init = async () => {
@@ -1132,6 +1172,7 @@ function App() {
   }, []);
 
   const handleRefresh = useCallback(async () => {
+    trackEvent('manual_refresh', { state }, currentUser);
     setRefreshing(true);
     await loadSchedule();
     setTimeout(() => setRefreshing(false), 600);
@@ -1159,6 +1200,11 @@ function App() {
 
   const handlePinChanged = () => setState('dashboard');
 
+  const handleTabChange = (nextTab) => {
+    trackEvent('tab_change', { tab: nextTab }, currentUser);
+    setTab(nextTab);
+  };
+
   // 셀 클릭 (4번 항목: 7일 이전 수정 제한)
   // SQL: ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;
   const handleCellClick = (dateKey, existing) => {
@@ -1169,6 +1215,7 @@ function App() {
         return;
       }
     }
+    trackEvent('date_open', { date: dateKey, has_schedule: !!existing }, currentUser);
     setModal({ dateKey, existing });
   };
 
@@ -1220,6 +1267,7 @@ function App() {
       }
     }
     await saveSingleDay(dateKey, formData);
+    trackEvent('schedule_save_single', { date: dateKey, is_handover: !!formData.is_handover, worker: formData.worker }, currentUser);
     setModal(null);
     loadSchedule();
   };
@@ -1229,6 +1277,7 @@ function App() {
     setFilling(true);
     const { dateKey, formData } = confirmModal;
     await saveSingleDay(dateKey, formData);
+    trackEvent('schedule_save_single', { date: dateKey, is_handover: !!formData.is_handover, worker: formData.worker, source: 'confirm' }, currentUser);
     setModal(null); setConfirmModal(null); setFilling(false);
     loadSchedule();
   };
@@ -1246,6 +1295,12 @@ function App() {
       ...forwardKeys.map(k => saveSingleDay(k, makeData(k, formData.worker))),
       ...backwardKeys.map(k => saveSingleDay(k, makeData(k, otherWorker))),
     ]);
+    trackEvent('schedule_save_autofill', {
+      date: dateKey,
+      worker: formData.worker,
+      forward_count: forwardKeys.length,
+      backward_count: backwardKeys.length,
+    }, currentUser);
     setModal(null); setConfirmModal(null); setFilling(false);
     loadSchedule();
   };
@@ -1253,18 +1308,25 @@ function App() {
   // 삭제
   const handleDelete = async (dateKey) => {
     await supabase.from('schedule').delete().eq('date', dateKey);
+    trackEvent('schedule_delete', { date: dateKey }, currentUser);
     setModal(null);
     loadSchedule();
   };
 
   // 월 이동
   const prevMonth = () => {
+    const nextYear = calMonth === 0 ? calYear - 1 : calYear;
+    const nextMonthNum = calMonth === 0 ? 12 : calMonth;
     if (calMonth === 0) { setCalYear(y=>y-1); setCalMonth(11); }
     else setCalMonth(m=>m-1);
+    trackEvent('month_prev', { year: nextYear, month: nextMonthNum }, currentUser);
   };
   const nextMonth = () => {
+    const nextYear = calMonth === 11 ? calYear + 1 : calYear;
+    const nextMonthNum = calMonth === 11 ? 1 : calMonth + 2;
     if (calMonth === 11) { setCalYear(y=>y+1); setCalMonth(0); }
     else setCalMonth(m=>m+1);
+    trackEvent('month_next', { year: nextYear, month: nextMonthNum }, currentUser);
   };
 
   if (state === 'loading') return <LoadingScreen />;
@@ -1283,7 +1345,7 @@ function App() {
           <div className="header-right">
             <FairnessIndicator scheduleMap={scheduleMap} />
             <button className={`refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh} title="새로고침">↻</button>
-            <button className="logout-btn" onClick={()=>{ setCurrentUser(null); setState('login'); }}>로그아웃</button>
+            <button className="logout-btn" onClick={()=>{ trackEvent('logout', {}, currentUser); setCurrentUser(null); setState('login'); }}>로그아웃</button>
           </div>
         </div>
       </div>
@@ -1298,7 +1360,7 @@ function App() {
         {/* 탭 */}
         <div className="tabs">
           {[['calendar','📅 근무 스케줄'],['offday','🏖️ 휴무일'],['wish','💚 희망일'],['stats','📊 통계'],['weather','🌊 기상']].map(([k,l])=>(
-            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
+            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>handleTabChange(k)}>{l}</button>
           ))}
         </div>
 
